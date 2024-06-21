@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "./ITapeFeeModel.sol";
 import "./ITapeModel.sol";
+import "./ITapeOwnershipModel.sol";
 
 contract TapeBondUtils {
     error Tape__InvalidCurrencyToken(string reason);
@@ -11,6 +12,7 @@ contract TapeBondUtils {
     error Tape__ChangeError();
     error Tape__InvalidFeeModel(string reason);
     error Tape__InvalidTapeModel(string reason);
+    error Tape__InvalidTapeOwnershipModel(string reason);
     error Tape__InvalidBondParams(string reason);
     error Tape__NotFound();
     error Tape__InvalidUser();
@@ -21,11 +23,13 @@ contract TapeBondUtils {
     error Tape__ExceedSupply();
     // error Tape__InvalidReceiver();
     error Tape__SlippageLimitExceeded();
+    error Tape__InvalidOwner();
     
     event Buy(bytes32 indexed tapeId, address indexed user, uint256 amountMinted, uint256 pricePayed);
     event Sell(bytes32 indexed tapeId, address indexed user, uint256 amountBurned, uint256 refundReceived);
     event Consume(bytes32 indexed tapeId, address indexed user, uint256 amountConsumed, uint256 currencyDonated);
-    event Reward(bytes32 indexed tapeId, address indexed user, address indexed token, uint256 amount, RewardType rewardType);
+    event Reward(bytes32 indexed tapeId, address indexed user, address indexed token, RewardType rewardType, uint256 amount);
+    event Tape(bytes32 indexed tapeId, address indexed token, uint256 currentPrice, uint256 currentSupply, uint256 currentBalance);
 
     enum RewardType {
         ProtocolFee,
@@ -76,6 +80,7 @@ contract TapeBondUtils {
     }
 
     // Constants
+    uint256 private constant MIN_BOOL_LENGTH = 31; // uint8 = 32 bytes
     uint256 private constant MIN_UINT8_LENGTH = 31; // uint8 = 32 bytes
     uint256 private constant MIN_STRING_LENGTH = 95; // empty string = 64 bytes, 1 character = 96 bytes
     uint256 private constant MIN_2BYTES32_LENGTH = 63; // uint256 = 32 bytes * 2
@@ -134,16 +139,58 @@ contract TapeBondUtils {
         model.decodeTapeMetadata("");
     }
     
+    function verifyTapeOwnershipModel(address newModel) view public {
+        if (newModel == address(0)) revert Tape__InvalidTapeModel('address');
+        ITapeOwnershipModel model = ITapeOwnershipModel(newModel);
+        if(!_checkMethodExists(newModel, abi.encodeWithSignature("checkOwner(address,bytes32)",address(0),bytes32(0)), MIN_BOOL_LENGTH)) 
+            revert Tape__InvalidTapeOwnershipModel('checkOwner');
+        model.checkOwner(address(0),bytes32(0));
+    }
+    
     function _checkMethodExists(address implementation, bytes memory methodBytes, uint256 minLength) private view returns (bool) {
         (bool success, bytes memory data) = implementation.staticcall(methodBytes);
         return success && data.length > minLength;
     }
 
-    function validateBondParams(uint128 newMaxSupply, uint256 maxSteps, uint128[] memory stepRangesMax, uint128[] memory stepCoefficients) pure public {
+    function validateBondingCurve(
+        uint128[] memory stepRangesMax, 
+        uint128[] memory stepCoefficients, uint128 newMaxSupply) public pure returns(BondingCurveStep[] memory) {
+
+        if (stepRangesMax[stepRangesMax.length - 1] > newMaxSupply) revert Tape__InvalidBondParams('MAX_SUPPLY');
+
+        BondingCurveStep[] memory steps = new BondingCurveStep[](stepRangesMax.length);
+
+        uint256 lastRangeMax;
+        for (uint256 i = 0; i < stepRangesMax.length; ++i) {
+            uint256 stepRangeMax = stepRangesMax[i];
+            uint256 stepCoefficient = stepCoefficients[i];
+
+            if (stepRangeMax == 0) {
+                revert Tape__InvalidBondParams('STEP_CANNOT_BE_ZERO');
+            } 
+            if (stepRangeMax <= lastRangeMax) {
+                revert Tape__InvalidBondParams('STEP_CANNOT_BE_LESS_THAN_PREVIOUS');
+            } 
+            // else if (stepCoefficient > 0 && stepRangeMax * stepCoefficient < multiFactor) {
+            //     // To minimize rounding errors, the product of the range and coefficient must be at least multiFactor (1e18 for ERC20)
+            //     revert Tape__InvalidBondParams('STEP_RANGE_OR_PRICE_TOO_SMALL');
+            // }
+
+            steps[i] = TapeBondUtils.BondingCurveStep({
+                rangeMax: uint128(stepRangeMax),
+                coefficient: uint128(stepCoefficient)
+            });
+            lastRangeMax = stepRangeMax;
+        }
+
+        return  steps;
+    }
+
+    function validateBondParams(uint256 maxSteps, uint128[] memory stepRangesMax, uint128[] memory stepCoefficients) pure public {
         if (stepRangesMax.length == 0 || stepRangesMax.length > maxSteps) revert Tape__InvalidBondParams('INVALID_STEP_LENGTH');
         if (stepCoefficients.length != stepRangesMax.length) revert Tape__InvalidBondParams('STEP_LENGTH_DO_NOT_MATCH');
         // Last value or the rangeTo must be the same as the maxSupply
-        if (stepRangesMax[stepRangesMax.length - 1] != newMaxSupply) revert Tape__InvalidBondParams('MAX_SUPPLY_MISMATCH');
+        // validateBondingCurve(stepRangesMax, stepCoefficients,newMaxSupply);
     }
 
     function getCurrentStep(uint256 currentSupply, TapeBond memory bond) public pure returns (uint256)  {
@@ -161,7 +208,7 @@ contract TapeBondUtils {
         
         BondingCurveStep[] memory steps = bond.steps;
 
-        uint256 currentSupply = bond.currentSupply;
+        uint256 currentSupply = bond.currentSupply + bond.count.consumed;
 
         if (currentSupply + tokensToMint > bond.steps[bond.steps.length - 1].rangeMax) revert Tape__ExceedSupply();
 
@@ -193,7 +240,7 @@ contract TapeBondUtils {
             }
         }
 
-        if (currencyAmountToBond == 0 || tokensLeft > 0) revert Tape__InvalidAmount();
+        if (tokensLeft > 0) revert Tape__InvalidAmount();
 
         finalPrice = priceAfter;
         currencyAmount = currencyAmountToBond;
@@ -208,7 +255,7 @@ contract TapeBondUtils {
 
         uint256 currentSupply = bond.currentSupply;
 
-        if (tokensToBurn > currentSupply - bond.count.consumed) revert Tape__ExceedSupply();
+        if (tokensToBurn > currentSupply) revert Tape__ExceedSupply();
 
         // uint256 multiFactor = 10**t.decimals();
         uint256 currencyAmountFromBond;
@@ -235,7 +282,7 @@ contract TapeBondUtils {
             if (i > 0) --i;
         }
 
-        if (currencyAmountFromBond == 0 || tokensLeft > 0) revert Tape__InvalidAmount();
+        if (tokensLeft > 0) revert Tape__InvalidAmount();
 
         finalPrice = priceAfter;
         currencyAmount = currencyAmountFromBond;
@@ -249,7 +296,7 @@ contract TapeBondUtils {
 
         uint256 currentConsumed = bond.count.consumed;
 
-        if (currentConsumed + tokensToConsume > bond.currentSupply) revert Tape__ExceedSupply();
+        if (tokensToConsume > bond.currentSupply) revert Tape__ExceedSupply();
 
         uint256 tokensLeft = tokensToConsume;
         uint256 currencyAmountToBond;
@@ -279,10 +326,21 @@ contract TapeBondUtils {
             }
         }
 
-        if (currencyAmountToBond == 0 || tokensLeft > 0) revert Tape__InvalidAmount();
+        if (tokensLeft > 0) revert Tape__InvalidAmount();
 
         finalPrice = priceAfter;
         currencyAmount = currencyAmountToBond;
     }
     
+    function toHex(bytes memory buffer) public pure returns (string memory) {
+        bytes memory converted = new bytes(buffer.length * 2);
+        bytes memory _base = "0123456789abcdef";
+
+        for (uint256 i = 0; i < buffer.length; i++) {
+            converted[i * 2] = _base[uint8(buffer[i]) / _base.length];
+            converted[i * 2 + 1] = _base[uint8(buffer[i]) % _base.length];
+        }
+
+        return string(converted);
+    }
 }
