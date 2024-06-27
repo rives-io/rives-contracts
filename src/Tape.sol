@@ -10,10 +10,21 @@ import "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
 import "@cartesi/rollups/contracts/library/LibOutputValidation.sol";
 import "./ITapeFeeModel.sol";
 import "./ITapeModel.sol";
-import "./ITapeOwnershipModel.sol";
+import "./IOwnershipModel.sol";
+import "./IBondingCurveModel.sol";
 import "./TapeBondUtils.sol";
+import "./BondUtils.sol";
 
 contract Tape is ERC1155, Ownable {
+    error Tape__NotFound();
+    error Tape__InvalidOwner();
+    error Tape__InvalidUser();
+    error Tape__InvalidDapp();
+    error Tape__InvalidTape(string reason);
+    error Tape__SlippageLimitExceeded();
+    error Tape__InsufficientFunds();
+    error Tape__ChangeError();
+
     struct UserAccount {
         address max;
         mapping (address => uint256) tokenBalance;
@@ -26,12 +37,13 @@ contract Tape is ERC1155, Ownable {
     // string private _baseURI = "";
 
     // Default parameters
-    TapeBondUtils.BondingCurveStep[] public bondingCurveSteps;
+    IBondingCurveModel.BondingCurveStep[] public bondingCurveSteps;
     address public currencyTokenAddress;
     address public feeModelAddress;
     address public tapeModelAddress;
     address public tapeBondUtilsAddress;
-    address public tapeOwnershipAddress;
+    address public tapeOwnershipModelAddress;
+    address public tapeBondingCurveModelAddress;
     uint128 public maxSupply;
     address protocolWallet;
 
@@ -43,7 +55,8 @@ contract Tape is ERC1155, Ownable {
     mapping (address => mapping (address => uint256)) public accounts; // user -> token -> amount
 
     // dapps
-    address[] public dappAddresses;
+    mapping (address => bool) public dappAddresses; // user -> token -> amount
+    // address[] public dappAddresses;
 
     // Constructor
     constructor(
@@ -52,8 +65,9 @@ contract Tape is ERC1155, Ownable {
         address newCurrencyToken,
         address newFeeModel,
         address newTapeModel,
+        address newTapeOwnershipModelAddress,
+        address newTapeBondingCurveModelAddress,
         address newTapeBondUtilsAddress,
-        address newTapeOwnershipAddress,
         uint128 newMaxSupply,
         uint128[] memory stepRangesMax, 
         uint128[] memory stepCoefficients
@@ -68,7 +82,8 @@ contract Tape is ERC1155, Ownable {
             newCurrencyToken,
             newFeeModel,
             newTapeModel,
-            newTapeOwnershipAddress,
+            newTapeOwnershipModelAddress,
+            newTapeBondingCurveModelAddress,
             newMaxSupply,
             stepRangesMax, 
             stepCoefficients);
@@ -82,12 +97,12 @@ contract Tape is ERC1155, Ownable {
     // }
 
     modifier _checkTapeBond(bytes32 id) {
-        if(tapeBonds[id].steps.length == 0) revert TapeBondUtils.Tape__NotFound();
+        if(tapeBonds[id].bond.steps.length == 0) revert Tape__NotFound();
         _;
     }
 
     modifier _checkTapeOwner(bytes32 id) {
-        if(!ITapeOwnershipModel(tapeOwnershipAddress).checkOwner(msg.sender,id)) revert TapeBondUtils.Tape__InvalidOwner();
+        if(!IOwnershipModel(tapeOwnershipModelAddress).checkOwner(msg.sender,id)) revert Tape__InvalidOwner();
         _;
     }
 
@@ -98,7 +113,7 @@ contract Tape is ERC1155, Ownable {
     //         newTapeBond.currencyToken = currencyTokenAddress;
     //         newTapeBond.tapeModel = tapeModelAddress;
     //         for (uint256 i = 0; i < bondingCurveSteps.length; ++i) {
-    //             newTapeBond.steps.push(TapeBondUtils.BondingCurveStep({
+    //             newTapeBond.steps.push(IBondingCurveModel.BondingCurveStep({
     //                 rangeMax: bondingCurveSteps[i].rangeMax,
     //                 coefficient: bondingCurveSteps[i].coefficient
     //             }));
@@ -107,21 +122,21 @@ contract Tape is ERC1155, Ownable {
     //     }
     // }
 
-    function _createTapeBond(bytes32 id, TapeBondUtils.BondingCurveStep[] memory steps) internal {
-        if(tapeBonds[id].steps.length == 0) {
+    function _createTapeBond(bytes32 id, IBondingCurveModel.BondingCurveStep[] memory steps) internal {
+        if(tapeBonds[id].bond.steps.length == 0) {
             TapeBondUtils.TapeBond storage newTapeBond = tapeBonds[id];
             newTapeBond.feeModel = feeModelAddress;
-            newTapeBond.currencyToken = currencyTokenAddress;
+            newTapeBond.bond.currencyToken = currencyTokenAddress;
             newTapeBond.tapeModel = tapeModelAddress;
             for (uint256 i = 0; i < steps.length; ++i) {
-                newTapeBond.steps.push(TapeBondUtils.BondingCurveStep({
+                newTapeBond.bond.steps.push(IBondingCurveModel.BondingCurveStep({
                     rangeMax: steps[i].rangeMax,
                     coefficient: steps[i].coefficient
                 }));
             }
             tapeBondsCreated.push(id);
-            if (newTapeBond.steps[0].coefficient == 0) { // reserved for self
-                buyTapes(id,newTapeBond.steps[0].rangeMax,0);
+            if (newTapeBond.bond.steps[0].coefficient == 0) { // reserved for self
+                buyTapes(id,newTapeBond.bond.steps[0].rangeMax,0);
             }
         }
     }
@@ -132,7 +147,8 @@ contract Tape is ERC1155, Ownable {
         address newCurrencyToken,
         address newFeeModel,
         address newTapeModel,
-        address newTapeOwnershipAddress,
+        address newTapeOwnershipModelAddress,
+        address newTapeBondingCurveModelAddress,
         uint128 newMaxSupply,
         uint128[] memory stepRangesMax, 
         uint128[] memory stepCoefficients) internal 
@@ -144,9 +160,9 @@ contract Tape is ERC1155, Ownable {
 
         TapeBondUtils(tapeBondUtilsAddress).verifyTapeModel(newTapeModel);
         
-        TapeBondUtils(tapeBondUtilsAddress).verifyTapeOwnershipModel(newTapeOwnershipAddress);
+        TapeBondUtils(tapeBondUtilsAddress).verifyOwnershipModel(newTapeOwnershipModelAddress);
         
-        TapeBondUtils(tapeBondUtilsAddress).validateBondParams(MAX_STEPS,stepRangesMax,stepCoefficients);
+        IBondingCurveModel(newTapeBondingCurveModelAddress).validateBondParams(MAX_STEPS,stepRangesMax,stepCoefficients);
 
         // BondingCurveStep[] bondingCurveSteps;
         
@@ -154,9 +170,9 @@ contract Tape is ERC1155, Ownable {
 
         delete bondingCurveSteps;
 
-        TapeBondUtils.BondingCurveStep[] memory steps = TapeBondUtils(tapeBondUtilsAddress).validateBondingCurve(stepRangesMax,stepCoefficients,newMaxSupply);
+        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newTapeBondingCurveModelAddress).validateBondingCurve(bytes32(0),stepRangesMax,stepCoefficients,newMaxSupply);
         for (uint256 i = 0; i < steps.length; ++i) {
-            bondingCurveSteps.push(TapeBondUtils.BondingCurveStep({
+            bondingCurveSteps.push(IBondingCurveModel.BondingCurveStep({
                 rangeMax: steps[i].rangeMax,
                 coefficient: steps[i].coefficient
             }));
@@ -173,7 +189,7 @@ contract Tape is ERC1155, Ownable {
         //     //     revert Tape__InvalidBondParams('STEP_RANGE_OR_PRICE_TOO_SMALL');
         //     // }
 
-        //     bondingCurveSteps.push(TapeBondUtils.BondingCurveStep({
+        //     bondingCurveSteps.push(IBondingCurveModel.BondingCurveStep({
         //         rangeMax: uint128(stepRangeMax),
         //         coefficient: uint128(stepCoefficient)
         //     }));
@@ -184,31 +200,31 @@ contract Tape is ERC1155, Ownable {
 
         tapeModelAddress = newTapeModel;
 
-        tapeOwnershipAddress = newTapeOwnershipAddress;
+        tapeOwnershipModelAddress = newTapeOwnershipModelAddress;
+
+        tapeBondingCurveModelAddress = newTapeBondingCurveModelAddress;
         
         maxSupply = newMaxSupply;
 
     }
 
     function updateProtocolWallet(address newProtocolWallet) external {
-        if(_msgSender() != protocolWallet) revert TapeBondUtils.Tape__InvalidUser();
+        if(_msgSender() != protocolWallet) revert Tape__InvalidUser();
         protocolWallet = newProtocolWallet;
     }
 
     function addDapp(address dapp) external onlyOwner {
-        uint256 i;
-        for (; i < dappAddresses.length; ++i) {
-            if (dappAddresses[i] == dapp) break;
-        }
-        if (i != dappAddresses.length) revert TapeBondUtils.Tape__InvalidDapp();
-        dappAddresses.push(dapp);
+        if (dappAddresses[dapp]) revert Tape__InvalidDapp();
+        
+        dappAddresses[dapp] = true;
     }
 
     function updateBondingCurveParams(
         address newCurrencyToken,
         address newFeeModel,
         address newTapeModel,
-        address newTapeOwnershipAddress,
+        address newTapeOwnershipModelAddress,
+        address newTapeBondingCurveModelAddress,
         uint128 newMaxSupply,
         uint128[] memory stepRangesMax, 
         uint128[] memory stepCoefficients) external onlyOwner {
@@ -217,23 +233,24 @@ contract Tape is ERC1155, Ownable {
             newCurrencyToken,
             newFeeModel,
             newTapeModel,
-            newTapeOwnershipAddress,
+            newTapeOwnershipModelAddress,
+            newTapeBondingCurveModelAddress,
             newMaxSupply,
             stepRangesMax, 
             stepCoefficients);
     }
 
-    // function setURI(string calldata newUri) external onlyOwner {
-    //     _setURI(newUri);
-    // }
+    function setURI(string calldata newUri) external onlyOwner {
+        _setURI(newUri);
+    }
 
     // function setBaseURI(string memory baseURI) public onlyOwner {
     //     _baseURI = baseURI;
     // }
 
     function changeTapeModel(bytes32 tapeId, address newTapeModel) external onlyOwner {
-        if (tapeBonds[tapeId].steps.length == 0) revert TapeBondUtils.Tape__NotFound();
-        if (tapeBonds[tapeId].tapeOutputData.length > 0) revert TapeBondUtils.Tape__InvalidTape('Tape already validated');
+        if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
+        if (tapeBonds[tapeId].tapeOutputData.length > 0) revert Tape__InvalidTape('Tape already validated');
         TapeBondUtils(tapeBondUtilsAddress).verifyTapeModel(newTapeModel);
         tapeBonds[tapeId].tapeModel = newTapeModel;
     }
@@ -273,25 +290,25 @@ contract Tape is ERC1155, Ownable {
             }
 
             if (bond.cartridgeOwner != address(0)) {
-                accounts[bond.cartridgeOwner][bond.currencyToken] += cartridgeOwnerFee + royaltiesTCF;
-                emit TapeBondUtils.Reward(tapeId,bond.cartridgeOwner,bond.currencyToken,TapeBondUtils.RewardType.CartridgeOwnerFee,cartridgeOwnerFee);
+                accounts[bond.cartridgeOwner][bond.bond.currencyToken] += cartridgeOwnerFee + royaltiesTCF;
+                emit BondUtils.Reward(tapeId,bond.cartridgeOwner,bond.bond.currencyToken,BondUtils.RewardType.CartridgeOwnerFee,cartridgeOwnerFee);
                 if (royaltiesTCF > 0)
-                    emit TapeBondUtils.Reward(tapeId,bond.cartridgeOwner,bond.currencyToken,TapeBondUtils.RewardType.RoyaltyLeftover,royaltiesTCF);
+                    emit BondUtils.Reward(tapeId,bond.cartridgeOwner,bond.bond.currencyToken,BondUtils.RewardType.RoyaltyLeftover,royaltiesTCF);
             } else {
                 leftoverFees += cartridgeOwnerFee + royaltiesTCF;
             }
 
             if (bond.tapeCreator != address(0)) {
-                accounts[bond.tapeCreator][bond.currencyToken] += tapeCreatorFee + royaltiesCOF;
-                emit TapeBondUtils.Reward(tapeId,bond.tapeCreator,bond.currencyToken,TapeBondUtils.RewardType.TapeCreatorFee,tapeCreatorFee);
+                accounts[bond.tapeCreator][bond.bond.currencyToken] += tapeCreatorFee + royaltiesCOF;
+                emit BondUtils.Reward(tapeId,bond.tapeCreator,bond.bond.currencyToken,BondUtils.RewardType.TapeCreatorFee,tapeCreatorFee);
                 if (royaltiesCOF > 0)
-                    emit TapeBondUtils.Reward(tapeId,bond.tapeCreator,bond.currencyToken,TapeBondUtils.RewardType.RoyaltyLeftover,royaltiesCOF);
+                    emit BondUtils.Reward(tapeId,bond.tapeCreator,bond.bond.currencyToken,BondUtils.RewardType.RoyaltyLeftover,royaltiesCOF);
             } else {
                 leftoverFees += tapeCreatorFee + royaltiesCOF;
             }
             if (leftoverFees > 0) {
-                accounts[protocolWallet][bond.currencyToken] += leftoverFees;
-                emit TapeBondUtils.Reward(tapeId,protocolWallet,bond.currencyToken,TapeBondUtils.RewardType.ProtocolLeftover,leftoverFees);
+                accounts[protocolWallet][bond.bond.currencyToken] += leftoverFees;
+                emit BondUtils.Reward(tapeId,protocolWallet,bond.bond.currencyToken,BondUtils.RewardType.ProtocolLeftover,leftoverFees);
             }
             return (0,0,0);
         }
@@ -320,25 +337,25 @@ contract Tape is ERC1155, Ownable {
             (uint256 royaltiesCOF,uint256 royaltiesTCF) = ITapeFeeModel(bond.feeModel).getRoyaltiesFees(royaltiesFee);
 
             if (bond.cartridgeOwner != address(0)) {
-                accounts[bond.cartridgeOwner][bond.currencyToken] += royaltiesTCF;
-                emit TapeBondUtils.Reward(tapeId,bond.cartridgeOwner,bond.currencyToken,TapeBondUtils.RewardType.RoyaltyLeftover,royaltiesTCF);
+                accounts[bond.cartridgeOwner][bond.bond.currencyToken] += royaltiesTCF;
+                emit BondUtils.Reward(tapeId,bond.cartridgeOwner,bond.bond.currencyToken,BondUtils.RewardType.RoyaltyLeftover,royaltiesTCF);
             } else {
                 leftoverFees += royaltiesTCF;
             }
 
             if (bond.tapeCreator != address(0)) {
-                accounts[bond.tapeCreator][bond.currencyToken] += royaltiesCOF;
-                emit TapeBondUtils.Reward(tapeId,bond.tapeCreator,bond.currencyToken,TapeBondUtils.RewardType.RoyaltyLeftover,royaltiesCOF);
+                accounts[bond.tapeCreator][bond.bond.currencyToken] += royaltiesCOF;
+                emit BondUtils.Reward(tapeId,bond.tapeCreator,bond.bond.currencyToken,BondUtils.RewardType.RoyaltyLeftover,royaltiesCOF);
             } else {
                 leftoverFees += royaltiesCOF;
             }
             if (leftoverFees > 0) {
-                accounts[protocolWallet][bond.currencyToken] += leftoverFees;
-                emit TapeBondUtils.Reward(tapeId,protocolWallet,bond.currencyToken,TapeBondUtils.RewardType.ProtocolLeftover,leftoverFees);
+                accounts[protocolWallet][bond.bond.currencyToken] += leftoverFees;
+                emit BondUtils.Reward(tapeId,protocolWallet,bond.bond.currencyToken,BondUtils.RewardType.ProtocolLeftover,leftoverFees);
             }
 
         } else {
-            bond.unclaimed.royalties += royaltiesFee;
+            bond.bond.unclaimed.royalties += royaltiesFee;
         }
     }
 
@@ -352,51 +369,51 @@ contract Tape is ERC1155, Ownable {
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
-        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutToMintTokens(tapesToMint, bond);
+        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutToMintTokens(tapesToMint, bond.bond);
 
         // fees
         uint256 protocolFee;
         uint256 cartridgeOwnerFee;
         uint256 tapeCreatorFee;
         uint256 royaltiesFee;
-        if (bond.steps[0].coefficient != 0) { // reserved for self
+        if (bond.bond.steps[0].coefficient != 0) { // reserved for self
             (protocolFee,cartridgeOwnerFee, tapeCreatorFee,royaltiesFee) = ITapeFeeModel(bond.feeModel).getMintFees(tapesToMint, currencyAmount);
         }
 
         uint256 totalPrice = currencyAmount + protocolFee + cartridgeOwnerFee + tapeCreatorFee + royaltiesFee;
 
-        if (totalPrice > maxCurrencyPrice) revert TapeBondUtils.Tape__SlippageLimitExceeded();
+        if (totalPrice > maxCurrencyPrice) revert Tape__SlippageLimitExceeded();
 
         // Transfer currency from the user
-        if (bond.currencyToken != address(0))
-            ERC20(bond.currencyToken).transferFrom(user, address(this), totalPrice);
+        if (bond.bond.currencyToken != address(0))
+            ERC20(bond.bond.currencyToken).transferFrom(user, address(this), totalPrice);
         else {
-            if (msg.value < totalPrice) revert TapeBondUtils.Tape__InsufficientFunds();
+            if (msg.value < totalPrice) revert Tape__InsufficientFunds();
             else if (msg.value > totalPrice) {
                 (bool sent, ) = user.call{value: msg.value - totalPrice}("");
-                if (!sent) revert TapeBondUtils.Tape__ChangeError();
+                if (!sent) revert Tape__ChangeError();
             }
         }
         
         // update balances
-        bond.currencyBalance += currencyAmount;
-        bond.currentSupply += tapesToMint;
-        bond.count.minted += tapesToMint;
-        bond.currentPrice = finalPrice;
+        bond.bond.currencyBalance += currencyAmount;
+        bond.bond.currentSupply += tapesToMint;
+        bond.bond.count.minted += tapesToMint;
+        bond.bond.currentPrice = finalPrice;
 
         // transfer fees
         (cartridgeOwnerFee, tapeCreatorFee, royaltiesFee) = _distributeFees(tapeId, cartridgeOwnerFee, tapeCreatorFee, royaltiesFee);
 
-        bond.unclaimed.mint += tapeCreatorFee + cartridgeOwnerFee;
-        bond.unclaimed.undistributedRoyalties += royaltiesFee;
-        accounts[protocolWallet][bond.currencyToken] += protocolFee;
-        emit TapeBondUtils.Reward(tapeId,protocolWallet,bond.currencyToken,TapeBondUtils.RewardType.ProtocolFee,protocolFee);
+        bond.bond.unclaimed.mint += tapeCreatorFee + cartridgeOwnerFee;
+        bond.bond.unclaimed.undistributedRoyalties += royaltiesFee;
+        accounts[protocolWallet][bond.bond.currencyToken] += protocolFee;
+        emit BondUtils.Reward(tapeId,protocolWallet,bond.bond.currencyToken,BondUtils.RewardType.ProtocolFee,protocolFee);
 
         // Mint 
         _mint(user, uint256(tapeId), tapesToMint, "");
 
-        emit TapeBondUtils.Buy(tapeId, user, tapesToMint, totalPrice);
-        emit TapeBondUtils.Tape(tapeId, bond.currencyToken, bond.currentPrice, bond.currentSupply,bond.currencyBalance);
+        emit BondUtils.Buy(tapeId, user, tapesToMint, totalPrice);
+        emit BondUtils.Bond(tapeId, bond.bond.currencyToken, bond.bond.currentPrice, bond.bond.currentSupply,bond.bond.currencyBalance);
 
         return totalPrice;
     }
@@ -408,44 +425,44 @@ contract Tape is ERC1155, Ownable {
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
-        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tapesToBurn, bond);
+        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tapesToBurn, bond.bond);
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) = ITapeFeeModel(bond.feeModel).getBurnFees(tapesToBurn, currencyAmount);
 
         uint256 totalRefund = currencyAmount - (protocolFee + cartridgeOwnerFee + tapeCreatorFee + royaltiesFee);
 
-        if (totalRefund < minCurrencyRefund) revert TapeBondUtils.Tape__SlippageLimitExceeded();
+        if (totalRefund < minCurrencyRefund) revert Tape__SlippageLimitExceeded();
 
         // burn
         _burn(user, uint256(tapeId), tapesToBurn);
 
         // update balances
-        bond.currencyBalance -= currencyAmount;
-        bond.currentSupply -= tapesToBurn;
-        bond.count.burned += tapesToBurn;
-        bond.currentPrice = finalPrice;
+        bond.bond.currencyBalance -= currencyAmount;
+        bond.bond.currentSupply -= tapesToBurn;
+        bond.bond.count.burned += tapesToBurn;
+        bond.bond.currentPrice = finalPrice;
 
         // transfer fees
         (cartridgeOwnerFee, tapeCreatorFee, royaltiesFee) = _distributeFees(tapeId, cartridgeOwnerFee, tapeCreatorFee, royaltiesFee);
 
-        bond.unclaimed.burn += tapeCreatorFee + cartridgeOwnerFee;
-        bond.unclaimed.undistributedRoyalties += royaltiesFee;
+        bond.bond.unclaimed.burn += tapeCreatorFee + cartridgeOwnerFee;
+        bond.bond.unclaimed.undistributedRoyalties += royaltiesFee;
 
-        accounts[protocolWallet][bond.currencyToken] += protocolFee;
-        emit TapeBondUtils.Reward(tapeId,protocolWallet,bond.currencyToken,TapeBondUtils.RewardType.ProtocolFee,protocolFee);
+        accounts[protocolWallet][bond.bond.currencyToken] += protocolFee;
+        emit BondUtils.Reward(tapeId,protocolWallet,bond.bond.currencyToken,BondUtils.RewardType.ProtocolFee,protocolFee);
 
         // Transfer currency from the user
-        if (bond.currencyToken != address(0)) {
-            ERC20(bond.currencyToken).approve(address(this), totalRefund);
-            ERC20(bond.currencyToken).transferFrom(address(this), user, totalRefund);
+        if (bond.bond.currencyToken != address(0)) {
+            ERC20(bond.bond.currencyToken).approve(address(this), totalRefund);
+            ERC20(bond.bond.currencyToken).transferFrom(address(this), user, totalRefund);
         } else {
             (bool sent, ) = user.call{value: totalRefund}("");
-            if (!sent) revert TapeBondUtils.Tape__ChangeError();
+            if (!sent) revert Tape__ChangeError();
         }
 
-        emit TapeBondUtils.Sell(tapeId, user, tapesToBurn, totalRefund);
-        emit TapeBondUtils.Tape(tapeId, bond.currencyToken, bond.currentPrice, bond.currentSupply,bond.currencyBalance);
+        emit BondUtils.Sell(tapeId, user, tapesToBurn, totalRefund);
+        emit BondUtils.Bond(tapeId, bond.bond.currencyToken, bond.bond.currentPrice, bond.bond.currentSupply,bond.bond.currencyBalance);
 
         return totalRefund;
     }
@@ -457,7 +474,7 @@ contract Tape is ERC1155, Ownable {
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
-        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(tapesToConsume, bond);
+        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(tapesToConsume, bond.bond);
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) = ITapeFeeModel(bond.feeModel).getConsumeFees(currencyAmount);
@@ -466,24 +483,24 @@ contract Tape is ERC1155, Ownable {
         _burn(user, uint256(tapeId), tapesToConsume);
 
         // update balances
-        bond.currentSupply -= tapesToConsume;
-        bond.currencyBalance -= currencyAmount;
-        bond.count.consumed += tapesToConsume;
-        bond.consumePrice = finalPrice;
+        bond.bond.currentSupply -= tapesToConsume;
+        bond.bond.currencyBalance -= currencyAmount;
+        bond.bond.count.consumed += tapesToConsume;
+        bond.bond.consumePrice = finalPrice;
 
         // transfer fees
         (cartridgeOwnerFee, tapeCreatorFee, royaltiesFee) = _distributeFees(tapeId, cartridgeOwnerFee, tapeCreatorFee, royaltiesFee);
 
-        bond.unclaimed.consume += tapeCreatorFee + cartridgeOwnerFee;
-        bond.unclaimed.undistributedRoyalties += royaltiesFee;
+        bond.bond.unclaimed.consume += tapeCreatorFee + cartridgeOwnerFee;
+        bond.bond.unclaimed.undistributedRoyalties += royaltiesFee;
 
-        accounts[protocolWallet][bond.currencyToken] += protocolFee;
-        emit TapeBondUtils.Reward(tapeId,protocolWallet,bond.currencyToken,TapeBondUtils.RewardType.ProtocolFee,protocolFee);
+        accounts[protocolWallet][bond.bond.currencyToken] += protocolFee;
+        emit BondUtils.Reward(tapeId,protocolWallet,bond.bond.currencyToken,BondUtils.RewardType.ProtocolFee,protocolFee);
 
         // Transfer currency from the user
 
-        emit TapeBondUtils.Consume(tapeId, user, tapesToConsume, currencyAmount);
-        emit TapeBondUtils.Tape(tapeId, bond.currencyToken, bond.currentPrice, bond.currentSupply,bond.currencyBalance);
+        emit BondUtils.Consume(tapeId, user, tapesToConsume, currencyAmount);
+        emit BondUtils.Bond(tapeId, bond.bond.currencyToken, bond.bond.currentPrice, bond.bond.currentSupply,bond.bond.currencyBalance);
 
         return currencyAmount;
     }
@@ -493,7 +510,7 @@ contract Tape is ERC1155, Ownable {
         uint128[] memory stepRangesMax, 
         uint128[] memory stepCoefficients) public _checkTapeOwner(tapeId) {
 
-        TapeBondUtils.BondingCurveStep[] memory steps = TapeBondUtils(tapeBondUtilsAddress).validateBondingCurve(stepRangesMax,stepCoefficients,maxSupply);
+        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(tapeBondingCurveModelAddress).validateBondingCurve(tapeId,stepRangesMax,stepCoefficients,maxSupply);
 
         _createTapeBond(tapeId,steps);
     }
@@ -534,21 +551,17 @@ contract Tape is ERC1155, Ownable {
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
-        if (bond.tapeOutputData.length != 0) revert TapeBondUtils.Tape__InvalidTape('already validated');
+        if (bond.tapeOutputData.length != 0) revert Tape__InvalidTape('already validated');
 
         // verify dapp
-        uint256 i;
-        for (; i < dappAddresses.length; ++i) {
-            if (dappAddresses[i] == dapp) break;
-        }
-        if (i == dappAddresses.length) revert TapeBondUtils.Tape__InvalidDapp();
+        if (!dappAddresses[dapp]) revert Tape__InvalidDapp();
 
         // validate notice
         ICartesiDApp(dapp).validateNotice(_payload,_v);
 
         (bytes32 decodedTapeId,address cartridgeOwner,address tapeCreator) = ITapeModel(bond.tapeModel).decodeTapeUsers(_payload);
 
-        if (tapeId != decodedTapeId) revert TapeBondUtils.Tape__InvalidTape('tapeId');
+        if (tapeId != decodedTapeId) revert Tape__InvalidTape('tapeId');
 
         bond.cartridgeOwner = cartridgeOwner;
         bond.tapeCreator = tapeCreator;
@@ -556,47 +569,47 @@ contract Tape is ERC1155, Ownable {
 
         uint256 cofToDistribute;
         uint256 tcfToDistribute;
-        uint256 rfToDistribute = bond.unclaimed.undistributedRoyalties;
+        uint256 rfToDistribute = bond.bond.unclaimed.undistributedRoyalties;
 
-        if (bond.unclaimed.mint > 0) {
-            (, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee,) = ITapeFeeModel(bond.feeModel).getMintFees(bond.count.minted, bond.unclaimed.mint);
-            if (cartridgeOwnerFee + tapeCreatorFee > bond.unclaimed.mint) revert TapeBondUtils.Tape__InvalidTape('unclaimedMintFees');
+        if (bond.bond.unclaimed.mint > 0) {
+            (, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee,) = ITapeFeeModel(bond.feeModel).getMintFees(bond.bond.count.minted, bond.bond.unclaimed.mint);
+            if (cartridgeOwnerFee + tapeCreatorFee > bond.bond.unclaimed.mint) revert Tape__InvalidTape('unclaimedMintFees');
 
-            bond.unclaimed.mint -= cartridgeOwnerFee + tapeCreatorFee;
+            bond.bond.unclaimed.mint -= cartridgeOwnerFee + tapeCreatorFee;
             cofToDistribute += cartridgeOwnerFee;
             tcfToDistribute += tapeCreatorFee;
         }
 
-        if (bond.unclaimed.burn > 0) {
-            (, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee,) = ITapeFeeModel(bond.feeModel).getBurnFees(bond.count.burned, bond.unclaimed.burn);
-            if (cartridgeOwnerFee + tapeCreatorFee > bond.unclaimed.burn) revert TapeBondUtils.Tape__InvalidTape('unclaimedBurnFees');
+        if (bond.bond.unclaimed.burn > 0) {
+            (, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee,) = ITapeFeeModel(bond.feeModel).getBurnFees(bond.bond.count.burned, bond.bond.unclaimed.burn);
+            if (cartridgeOwnerFee + tapeCreatorFee > bond.bond.unclaimed.burn) revert Tape__InvalidTape('unclaimedBurnFees');
 
-            bond.unclaimed.burn -= cartridgeOwnerFee + tapeCreatorFee;
+            bond.bond.unclaimed.burn -= cartridgeOwnerFee + tapeCreatorFee;
             cofToDistribute += cartridgeOwnerFee;
             tcfToDistribute += tapeCreatorFee;
         }
 
-        if (bond.unclaimed.royalties > 0) {
-            (uint256 cartridgeOwnerFee, uint256 tapeCreatorFee) = ITapeFeeModel(bond.feeModel).getRoyaltiesFees(bond.unclaimed.royalties);
-            if (cartridgeOwnerFee + tapeCreatorFee > bond.unclaimed.royalties) revert TapeBondUtils.Tape__InvalidTape('unclaimedBurnFees');
+        if (bond.bond.unclaimed.royalties > 0) {
+            (uint256 cartridgeOwnerFee, uint256 tapeCreatorFee) = ITapeFeeModel(bond.feeModel).getRoyaltiesFees(bond.bond.unclaimed.royalties);
+            if (cartridgeOwnerFee + tapeCreatorFee > bond.bond.unclaimed.royalties) revert Tape__InvalidTape('unclaimedBurnFees');
 
-            bond.unclaimed.royalties -= cartridgeOwnerFee + tapeCreatorFee;
+            bond.bond.unclaimed.royalties -= cartridgeOwnerFee + tapeCreatorFee;
             cofToDistribute += cartridgeOwnerFee;
             tcfToDistribute += tapeCreatorFee;
         }
 
         _distributeFees(tapeId, cofToDistribute, tcfToDistribute, rfToDistribute);
 
-        uint256 leftover = bond.unclaimed.mint + bond.unclaimed.burn + bond.unclaimed.royalties;
+        uint256 leftover = bond.bond.unclaimed.mint + bond.bond.unclaimed.burn + bond.bond.unclaimed.royalties;
         if (leftover > 0) {
-            accounts[protocolWallet][bond.currencyToken] += bond.unclaimed.mint + bond.unclaimed.burn + bond.unclaimed.royalties;
-            emit TapeBondUtils.Reward(tapeId,protocolWallet,bond.currencyToken,TapeBondUtils.RewardType.ProtocolLeftover,leftover);
+            accounts[protocolWallet][bond.bond.currencyToken] += bond.bond.unclaimed.mint + bond.bond.unclaimed.burn + bond.bond.unclaimed.royalties;
+            emit BondUtils.Reward(tapeId,protocolWallet,bond.bond.currencyToken,BondUtils.RewardType.ProtocolLeftover,leftover);
         }
 
-        bond.unclaimed.mint = 0;
-        bond.unclaimed.burn = 0;
-        bond.unclaimed.royalties = 0;
-        bond.unclaimed.undistributedRoyalties = 0;
+        bond.bond.unclaimed.mint = 0;
+        bond.bond.unclaimed.burn = 0;
+        bond.bond.unclaimed.royalties = 0;
+        bond.bond.unclaimed.undistributedRoyalties = 0;
 
         return tapeId;
     }
@@ -606,7 +619,7 @@ contract Tape is ERC1155, Ownable {
 
     function withdrawBalance(address token, uint256 amount) external {
         address user = _msgSender();
-        if (accounts[user][token] < amount) revert TapeBondUtils.Tape__InvalidAmount();
+        if (accounts[user][token] < amount) revert BondUtils.Bond__InvalidAmount();
         accounts[user][token] -= amount;
 
         if (token != address(0)) {
@@ -614,7 +627,7 @@ contract Tape is ERC1155, Ownable {
             ERC20(token).transferFrom(address(this), user, amount);
         } else {
             (bool sent, ) = user.call{value: amount}("");
-            if (!sent) revert TapeBondUtils.Tape__ChangeError();
+            if (!sent) revert Tape__ChangeError();
         }
 
     }
@@ -627,7 +640,7 @@ contract Tape is ERC1155, Ownable {
     // }
 
     function getCurrentBuyPrice(bytes32 tapeId, uint256 tokensToMint) external view returns (uint256, uint256, uint256) {
-        if (tapeBonds[tapeId].steps.length == 0) revert TapeBondUtils.Tape__NotFound();
+        if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
         TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId];
         
         // TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId].steps.length != 0 ? 
@@ -655,7 +668,7 @@ contract Tape is ERC1155, Ownable {
         //         tapeOutputData:""
         //     });
 
-        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutToMintTokens(tokensToMint, bond);
+        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutToMintTokens(tokensToMint, bond.bond);
         
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) = ITapeFeeModel(bond.feeModel).getMintFees(tokensToMint, currencyAmount);
         uint256 fees = protocolFee + cartridgeOwnerFee + tapeCreatorFee + royaltiesFee;
@@ -664,9 +677,9 @@ contract Tape is ERC1155, Ownable {
     }
 
     function getCurrentSellPrice(bytes32 tapeId, uint256 tokensToBurn) external view returns (uint256, uint256, uint256) {
-        if (tapeBonds[tapeId].steps.length == 0) revert TapeBondUtils.Tape__NotFound();
+        if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
         TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId];
-        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tokensToBurn, bond);
+        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tokensToBurn, bond.bond);
         
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) = ITapeFeeModel(bond.feeModel).getBurnFees(tokensToBurn, currencyAmount);
         uint256 fees = protocolFee + cartridgeOwnerFee + tapeCreatorFee + royaltiesFee;
@@ -675,9 +688,9 @@ contract Tape is ERC1155, Ownable {
     }
 
     function getCurrentConsumePrice(bytes32 tapeId, uint256 tokensToConsume) external view returns (uint256, uint256) {
-        if (tapeBonds[tapeId].steps.length == 0) revert TapeBondUtils.Tape__NotFound();
+        if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
         TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId];
-        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(tokensToConsume, bond);
+        (uint256 currencyAmount, uint256 finalPrice) = TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(tokensToConsume, bond.bond);
         return (currencyAmount, finalPrice);
     }
 
@@ -688,13 +701,13 @@ contract Tape is ERC1155, Ownable {
     function totalTapes() external view returns (uint256) {
         uint256 total;
         for (uint256 i; i < tapeBondsCreated.length; ++i) {
-            total += tapeBonds[tapeBondsCreated[i]].currentSupply - tapeBonds[tapeBondsCreated[i]].count.consumed;
+            total += tapeBonds[tapeBondsCreated[i]].bond.currentSupply - tapeBonds[tapeBondsCreated[i]].bond.count.consumed;
         }
         return total;
     }
 
     function exists(bytes32 tapeId) external view returns (bool) {
-        return tapeBonds[tapeId].steps.length != 0;
+        return tapeBonds[tapeId].bond.steps.length != 0;
     }
 
     // function getSteps(bytes32 tapeId) external view returns (BondingCurveStep[] memory) {
@@ -702,11 +715,11 @@ contract Tape is ERC1155, Ownable {
     // }
 
     function maxTapeSupply(bytes32 tapeId) external view returns (uint128) {
-        return tapeBonds[tapeId].steps[tapeBonds[tapeId].steps.length - 1].rangeMax;
+        return tapeBonds[tapeId].bond.steps[tapeBonds[tapeId].bond.steps.length - 1].rangeMax;
     }
 
     function getTapeData(bytes32 tapeId) external view returns (bytes32, bytes32, int, bytes32, int, bytes32, int) {
-        if (tapeBonds[tapeId].tapeOutputData.length == 0) revert TapeBondUtils.Tape__InvalidTape("tapeOutputData");
+        if (tapeBonds[tapeId].tapeOutputData.length == 0) revert Tape__InvalidTape("tapeOutputData");
         return ITapeModel(tapeBonds[tapeId].tapeModel).decodeTapeMetadata(tapeBonds[tapeId].tapeOutputData);
     }
 
