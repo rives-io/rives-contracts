@@ -20,6 +20,7 @@ contract SECP256K1_ORDERetupCartridge is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address dappAddress = vm.envAddress("DAPP_ADDRESS");
+        address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
 
@@ -34,6 +35,7 @@ contract SECP256K1_ORDERetupCartridge is Script {
         
         // Ownership Model 
         bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModelVanguard3).creationCode);
+        address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         
         // Bonding Curve Model 
         bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModelVanguard3).creationCode);
@@ -67,7 +69,7 @@ contract SECP256K1_ORDERetupCartridge is Script {
             address(0), //currencyAddress,
             Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY),
             Create2.computeAddress(SALT, keccak256(cartridgeModelCode),DEPLOY_FACTORY),
-            Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY),
+            ownershipModelAddress,
             Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
             1000, // max supply
             ranges,
@@ -82,6 +84,20 @@ contract SECP256K1_ORDERetupCartridge is Script {
         console.logString("Setting uri");
         cartridge.setURI("https://vanguard.rives.io/cartridges/{id}");
 
+        if (OwnershipModelVanguard3(ownershipModelAddress).owner() != operatorAddress && OwnershipModelVanguard3(ownershipModelAddress).owner() == tx.origin) {
+            console.logString("Transfering ownership of ownership model from - to");
+            console.logAddress(OwnershipModelVanguard3(ownershipModelAddress).owner());
+            console.logAddress(operatorAddress);
+            OwnershipModelVanguard3(ownershipModelAddress).transferOwnership(operatorAddress);
+        }
+
+        if (cartridge.owner() != operatorAddress && cartridge.owner() == tx.origin) {
+            console.logString("Transfering ownership of cartridge from - to");
+            console.logAddress(cartridge.owner());
+            console.logAddress(operatorAddress);
+            cartridge.transferOwnership(operatorAddress);
+        }
+        
         vm.stopBroadcast();
     }
     
