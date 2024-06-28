@@ -60,33 +60,35 @@ contract Cartridge is ERC1155, Ownable {
 
     // Constructor
     constructor(
-        address newProtocolWallet,
-        uint256 maxSteps,
-        address newCurrencyToken,
-        address newFeeModel,
-        address newCartridgeModel,
-        address newCartridgeOwnershipModelAddress,
-        address newCartridgeBondingCurveModelAddress,
         address newCartridgeBondUtilsAddress,
-        uint128 newMaxSupply,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients
-    ) Ownable(msg.sender) ERC1155("") {
-        protocolWallet = newProtocolWallet;
+        uint256 maxSteps
+        // address newProtocolWallet,
+        // uint256 maxSteps,
+        // address newCurrencyToken,
+        // address newFeeModel,
+        // address newCartridgeModel,
+        // address newCartridgeOwnershipModelAddress,
+        // address newCartridgeBondingCurveModelAddress,
+        // address newCartridgeBondUtilsAddress,
+        // uint128 newMaxSupply,
+        // uint128[] memory stepRangesMax, 
+        // uint128[] memory stepCoefficients
+    ) Ownable(tx.origin) ERC1155("") {
+        protocolWallet = tx.origin;
 
         MAX_STEPS = maxSteps;
         
         cartridgeBondUtilsAddress = newCartridgeBondUtilsAddress;
         
-        _updateBondingCurveParams(
-            newCurrencyToken,
-            newFeeModel,
-            newCartridgeModel,
-            newCartridgeOwnershipModelAddress,
-            newCartridgeBondingCurveModelAddress,
-            newMaxSupply,
-            stepRangesMax, 
-            stepCoefficients);
+        // _updateBondingCurveParams(
+        //     newCurrencyToken,
+        //     newFeeModel,
+        //     newCartridgeModel,
+        //     newCartridgeOwnershipModelAddress,
+        //     newCartridgeBondingCurveModelAddress,
+        //     newMaxSupply,
+        //     stepRangesMax, 
+        //     stepCoefficients);
     }
 
 

@@ -60,33 +60,35 @@ contract Tape is ERC1155, Ownable {
 
     // Constructor
     constructor(
-        address newProtocolWallet,
-        uint256 maxSteps,
-        address newCurrencyToken,
-        address newFeeModel,
-        address newTapeModel,
-        address newTapeOwnershipModelAddress,
-        address newTapeBondingCurveModelAddress,
         address newTapeBondUtilsAddress,
-        uint128 newMaxSupply,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients
-    ) Ownable(msg.sender) ERC1155("") {
-        protocolWallet = newProtocolWallet;
+        uint256 maxSteps
+        // address newProtocolWallet,
+        // uint256 maxSteps,
+        // address newCurrencyToken,
+        // address newFeeModel,
+        // address newTapeModel,
+        // address newTapeOwnershipModelAddress,
+        // address newTapeBondingCurveModelAddress,
+        // address newTapeBondUtilsAddress,
+        // uint128 newMaxSupply,
+        // uint128[] memory stepRangesMax, 
+        // uint128[] memory stepCoefficients
+    ) Ownable(tx.origin) ERC1155("") {
+        protocolWallet = tx.origin;
 
         MAX_STEPS = maxSteps;
         
         tapeBondUtilsAddress = newTapeBondUtilsAddress;
         
-        _updateBondingCurveParams(
-            newCurrencyToken,
-            newFeeModel,
-            newTapeModel,
-            newTapeOwnershipModelAddress,
-            newTapeBondingCurveModelAddress,
-            newMaxSupply,
-            stepRangesMax, 
-            stepCoefficients);
+        // _updateBondingCurveParams(
+        //     newCurrencyToken,
+        //     newFeeModel,
+        //     newTapeModel,
+        //     newTapeOwnershipModelAddress,
+        //     newTapeBondingCurveModelAddress,
+        //     newMaxSupply,
+        //     stepRangesMax, 
+        //     stepCoefficients);
     }
 
 
