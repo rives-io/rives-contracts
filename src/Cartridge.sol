@@ -45,6 +45,7 @@ contract Cartridge is ERC1155, Ownable {
     address public cartridgeOwnershipModelAddress;
     address public cartridgeBondingCurveModelAddress;
     uint128 public maxSupply;
+    uint256 public feeConfig;
     address protocolWallet;
 
     // Cartridges
@@ -124,10 +125,11 @@ contract Cartridge is ERC1155, Ownable {
     //     }
     // }
 
-    function _createCartridgeBond(bytes32 id, IBondingCurveModel.BondingCurveStep[] memory steps) internal {
+    function _createCartridgeBond(bytes32 id, uint256 bondFeeConfig, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation) internal {
         if(cartridgeBonds[id].bond.steps.length == 0) {
             CartridgeBondUtils.CartridgeBond storage newCartridgeBond = cartridgeBonds[id];
             newCartridgeBond.feeModel = feeModelAddress;
+            newCartridgeBond.feeConfig = bondFeeConfig;
             newCartridgeBond.bond.currencyToken = currencyTokenAddress;
             newCartridgeBond.cartridgeModel = cartridgeModelAddress;
             for (uint256 i = 0; i < steps.length; ++i) {
@@ -137,7 +139,7 @@ contract Cartridge is ERC1155, Ownable {
                 }));
             }
             cartridgeBondsCreated.push(id);
-            if (newCartridgeBond.bond.steps[0].coefficient == 0) { // reserved for self
+            if (creatorAllocation && newCartridgeBond.bond.steps[0].coefficient == 0) { // reserved for self
                 buyCartridges(id,newCartridgeBond.bond.steps[0].rangeMax,0);
             }
         }
@@ -152,6 +154,7 @@ contract Cartridge is ERC1155, Ownable {
         address newCartridgeOwnershipModelAddress,
         address newCartridgeBondingCurveModelAddress,
         uint128 newMaxSupply,
+        uint256 newFeeConfig,
         uint128[] memory stepRangesMax, 
         uint128[] memory stepCoefficients) internal 
     {
@@ -208,6 +211,8 @@ contract Cartridge is ERC1155, Ownable {
         
         maxSupply = newMaxSupply;
 
+        feeConfig = newFeeConfig;
+
     }
 
     function updateProtocolWallet(address newProtocolWallet) external {
@@ -228,6 +233,7 @@ contract Cartridge is ERC1155, Ownable {
         address newCartridgeOwnershipModelAddress,
         address newCartridgeBondingCurveModelAddress,
         uint128 newMaxSupply,
+        uint256 newFeeConfig,
         uint128[] memory stepRangesMax, 
         uint128[] memory stepCoefficients) external onlyOwner {
 
@@ -238,6 +244,7 @@ contract Cartridge is ERC1155, Ownable {
             newCartridgeOwnershipModelAddress,
             newCartridgeBondingCurveModelAddress,
             newMaxSupply,
+            newFeeConfig,
             stepRangesMax, 
             stepCoefficients);
     }
@@ -306,7 +313,7 @@ contract Cartridge is ERC1155, Ownable {
         uint256 protocolFee;
         uint256 cartridgeOwnerFee;
         if (bond.bond.steps[0].coefficient != 0) { // reserved for self
-            (protocolFee,cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getMintFees(cartridgesToMint, currencyAmount);
+            (protocolFee,cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getMintFees(bond.feeConfig, cartridgesToMint, currencyAmount);
         }
 
         uint256 totalPrice = currencyAmount + protocolFee + cartridgeOwnerFee;
@@ -356,7 +363,7 @@ contract Cartridge is ERC1155, Ownable {
         (uint256 currencyAmount, uint256 finalPrice) = CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutForBurningTokens(cartridgesToBurn, bond.bond);
 
         // fees
-        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getBurnFees(cartridgesToBurn, currencyAmount);
+        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getBurnFees(bond.feeConfig, cartridgesToBurn, currencyAmount);
 
         uint256 totalRefund = currencyAmount - (protocolFee + cartridgeOwnerFee);
 
@@ -404,7 +411,8 @@ contract Cartridge is ERC1155, Ownable {
         (uint256 currencyAmount, uint256 finalPrice) = CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(cartridgesToConsume, bond.bond);
 
         // fees
-        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getConsumeFees(currencyAmount);
+        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getConsumeFees(bond.feeConfig, currencyAmount);
+        if (protocolFee + cartridgeOwnerFee != currencyAmount) revert Cartridge__InsufficientFunds();
 
         // burn
         _burn(user, uint256(cartridgeId), cartridgesToConsume);
@@ -433,16 +441,18 @@ contract Cartridge is ERC1155, Ownable {
 
     function setCartridgeParamsCustom(
         bytes32 cartridgeId,
+        uint256 bondFeeConfig,
         uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients) public _checkCartridgeOwner(cartridgeId) {
+        uint128[] memory stepCoefficients,
+        bool creatorAllocation) public _checkCartridgeOwner(cartridgeId) {
 
         IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(cartridgeBondingCurveModelAddress).validateBondingCurve(cartridgeId,stepRangesMax,stepCoefficients,maxSupply);
 
-        _createCartridgeBond(cartridgeId,steps);
+        _createCartridgeBond(cartridgeId,bondFeeConfig,steps,creatorAllocation);
     }
 
     function setCartridgeParams(bytes32 cartridgeId) public _checkCartridgeOwner(cartridgeId) {
-        _createCartridgeBond(cartridgeId,bondingCurveSteps);
+        _createCartridgeBond(cartridgeId,feeConfig,bondingCurveSteps,false);
     }
 
     function validateCartridgeCustom(
@@ -450,10 +460,12 @@ contract Cartridge is ERC1155, Ownable {
         bytes32 cartridgeId,
         bytes calldata _payload,
         Proof calldata _v,
+        uint256 bondFeeConfig,
         uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients) external returns (bytes32) {
+        uint128[] memory stepCoefficients,
+        bool creatorAllocation) external returns (bytes32) {
 
-        setCartridgeParamsCustom(cartridgeId,stepRangesMax,stepCoefficients);
+        setCartridgeParamsCustom(cartridgeId,bondFeeConfig,stepRangesMax,stepCoefficients,creatorAllocation);
 
         return _validateCartridge(dapp,cartridgeId,_payload,_v);
     }
@@ -495,7 +507,7 @@ contract Cartridge is ERC1155, Ownable {
         uint256 cofToDistribute;
 
         if (bond.bond.unclaimed.mint > 0) {
-            (, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getMintFees(bond.bond.count.minted, bond.bond.unclaimed.mint);
+            (, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getMintFees(bond.feeConfig, bond.bond.count.minted, bond.bond.unclaimed.mint);
             if (cartridgeOwnerFee > bond.bond.unclaimed.mint) revert Cartridge__InvalidCartridge('unclaimedMintFees');
 
             bond.bond.unclaimed.mint -= cartridgeOwnerFee;
@@ -503,7 +515,7 @@ contract Cartridge is ERC1155, Ownable {
         }
 
         if (bond.bond.unclaimed.burn > 0) {
-            (, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getBurnFees(bond.bond.count.burned, bond.bond.unclaimed.burn);
+            (, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getBurnFees(bond.feeConfig, bond.bond.count.burned, bond.bond.unclaimed.burn);
             if (cartridgeOwnerFee > bond.bond.unclaimed.burn) revert Cartridge__InvalidCartridge('unclaimedBurnFees');
 
             bond.bond.unclaimed.burn -= cartridgeOwnerFee;
@@ -581,7 +593,7 @@ contract Cartridge is ERC1155, Ownable {
 
         (uint256 currencyAmount, uint256 finalPrice) = CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutToMintTokens(tokensToMint, bond.bond);
         
-        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getMintFees(tokensToMint, currencyAmount);
+        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getMintFees(bond.feeConfig, tokensToMint, currencyAmount);
         uint256 fees = protocolFee + cartridgeOwnerFee;
 
         return (currencyAmount + fees, fees, finalPrice);
@@ -592,7 +604,7 @@ contract Cartridge is ERC1155, Ownable {
         CartridgeBondUtils.CartridgeBond memory bond = cartridgeBonds[cartridgeId];
         (uint256 currencyAmount, uint256 finalPrice) = CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tokensToBurn, bond.bond);
         
-        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getBurnFees(tokensToBurn, currencyAmount);
+        (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getBurnFees(bond.feeConfig, tokensToBurn, currencyAmount);
         uint256 fees = protocolFee + cartridgeOwnerFee;
 
         return (currencyAmount - fees, fees, finalPrice);

@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { TapeFixedFeeVanguard3 } from "../src/TapeFixedFeeVanguard3.sol";
-import { TapeModelVanguard3 } from "../src/TapeModelVanguard3.sol";
-import { OwnershipModelVanguard3 } from "../src/OwnershipModelVanguard3.sol";
-import { BondingCurveModelVanguard3 } from "../src/BondingCurveModelVanguard3.sol";
+import { TapeProportionalFeeVanguard3v2 as TapeFeeModel } from "../src/TapeProportionalFeeVanguard3v2.sol";
+import { TapeModelVanguard3v2 as TapeModel} from "../src/TapeModelVanguard3v2.sol";
+import { OwnershipModelVanguard3 as OwnershipModel } from "../src/OwnershipModelVanguard3.sol";
+import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
 import { TapeBondUtils } from "../src/TapeBondUtils.sol";
 import { Tape } from "../src/Tape.sol";
 
@@ -28,17 +28,17 @@ contract SECP256K1_ORDERetupTape is Script {
         // address currencyAddress = address(0);
 
         // Tape Fee Model 
-        bytes memory feeModelCode = abi.encodePacked(type(TapeFixedFeeVanguard3).creationCode);        
+        bytes memory feeModelCode = abi.encodePacked(type(TapeFeeModel).creationCode);        
         
         // Tape Model 
-        bytes memory tapeModelCode = abi.encodePacked(type(TapeModelVanguard3).creationCode);
+        bytes memory tapeModelCode = abi.encodePacked(type(TapeModel).creationCode);
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModelVanguard3).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         
         // Bonding Curve Model 
-        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModelVanguard3).creationCode);
+        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModel).creationCode);
         
         // Tape Bond Utils
         bytes memory tapeBondUtilsCode = abi.encodePacked(type(TapeBondUtils).creationCode);
@@ -56,14 +56,20 @@ contract SECP256K1_ORDERetupTape is Script {
         // console.logAddress(msg.sender);
         // console.logAddress(tx.origin);
         // console.logAddress(tape.owner());
-        uint128[] memory ranges =  new uint128[](3); //[1,5,1000];
+        uint128[] memory ranges =  new uint128[](6); //[1,5,1000];
         ranges[0] = 1;
-        ranges[1] = 5;
-        ranges[2] = 1000;
-        uint128[] memory coefficients = new uint128[](3);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
+        ranges[1] = 1340;
+        ranges[2] = 2942;
+        ranges[3] = 5091;
+        ranges[4] = 9161;
+        ranges[5] = 10000;
+        uint128[] memory coefficients = new uint128[](6);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
         coefficients[0] = 1000000000000000;
-        coefficients[1] = 1000000000000000;
-        coefficients[2] = 2000000000000000;
+        coefficients[1] = 23863899643421;
+        coefficients[2] = 18753391400637;
+        coefficients[3] = 10512971063653;
+        coefficients[4] = 3046442261674;
+        coefficients[5] = 817720774556;
         tape.updateBondingCurveParams(
             // newCurrencyToken, newFeeModel, newTapeModel, newTapeOwnershipModelAddress, newTapeBondingCurveModelAddress, newMaxSupply, stepRangesMax, stepCoefficients
             address(0), //currencyAddress,
@@ -71,7 +77,7 @@ contract SECP256K1_ORDERetupTape is Script {
             Create2.computeAddress(SALT, keccak256(tapeModelCode),DEPLOY_FACTORY),
             ownershipModelAddress,
             Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
-            1000, // max supply
+            10000, // max supply
             ranges,
             coefficients
         );
@@ -84,11 +90,11 @@ contract SECP256K1_ORDERetupTape is Script {
         console.logString("Setting uri");
         tape.setURI("https://vanguard.rives.io/tapes/{id}");
 
-        if (OwnershipModelVanguard3(ownershipModelAddress).owner() != operatorAddress && OwnershipModelVanguard3(ownershipModelAddress).owner() == tx.origin) {
+        if (OwnershipModel(ownershipModelAddress).owner() != operatorAddress && OwnershipModel(ownershipModelAddress).owner() == tx.origin) {
             console.logString("Transfering ownership of ownership model from - to");
-            console.logAddress(OwnershipModelVanguard3(ownershipModelAddress).owner());
+            console.logAddress(OwnershipModel(ownershipModelAddress).owner());
             console.logAddress(operatorAddress);
-            OwnershipModelVanguard3(ownershipModelAddress).transferOwnership(operatorAddress);
+            OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
         }
 
         if (tape.owner() != operatorAddress && tape.owner() == tx.origin) {

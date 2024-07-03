@@ -104,7 +104,7 @@ contract Tape is ERC1155, Ownable {
     }
 
     modifier _checkTapeOwner(bytes32 id) {
-        if(!IOwnershipModel(tapeOwnershipModelAddress).checkOwner(msg.sender,id)) revert Tape__InvalidOwner();
+        if(!IOwnershipModel(tapeOwnershipModelAddress).checkOwner(_msgSender(),id)) revert Tape__InvalidOwner();
         _;
     }
 
@@ -480,6 +480,7 @@ contract Tape is ERC1155, Ownable {
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) = ITapeFeeModel(bond.feeModel).getConsumeFees(currencyAmount);
+        // if (protocolFee + cartridgeOwnerFee + tapeCreatorFee + royaltiesFee != currencyAmount) revert Tape__InsufficientFunds();
 
         // burn
         _burn(user, uint256(tapeId), tapesToConsume);

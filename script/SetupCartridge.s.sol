@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { CartridgeFixedFeeVanguard3 } from "../src/CartridgeFixedFeeVanguard3.sol";
-import { CartridgeModelVanguard3 } from "../src/CartridgeModelVanguard3.sol";
-import { OwnershipModelVanguard3 } from "../src/OwnershipModelVanguard3.sol";
-import { BondingCurveModelVanguard3 } from "../src/BondingCurveModelVanguard3.sol";
+import { CartridgeProportionalFeeVanguard3v2 as CartridgeFeeModel } from "../src/CartridgeProportionalFeeVanguard3v2.sol";
+import { CartridgeModelVanguard3v2 as CartridgeModel} from "../src/CartridgeModelVanguard3v2.sol";
+import { OwnershipModelVanguard3 as OwnershipModel } from "../src/OwnershipModelVanguard3.sol";
+import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
 import { CartridgeBondUtils } from "../src/CartridgeBondUtils.sol";
 import { Cartridge } from "../src/Cartridge.sol";
 
@@ -28,17 +28,17 @@ contract SECP256K1_ORDERetupCartridge is Script {
         // address currencyAddress = address(0);
 
         // Cartridge Fee Model 
-        bytes memory feeModelCode = abi.encodePacked(type(CartridgeFixedFeeVanguard3).creationCode);        
+        bytes memory feeModelCode = abi.encodePacked(type(CartridgeFeeModel).creationCode);        
         
         // Cartridge Model 
-        bytes memory cartridgeModelCode = abi.encodePacked(type(CartridgeModelVanguard3).creationCode);
+        bytes memory cartridgeModelCode = abi.encodePacked(type(CartridgeModel).creationCode);
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModelVanguard3).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         
         // Bonding Curve Model 
-        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModelVanguard3).creationCode);
+        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModel).creationCode);
         
         // Cartridge Bond Utils
         bytes memory cartridgeBondUtilsCode = abi.encodePacked(type(CartridgeBondUtils).creationCode);
@@ -56,14 +56,12 @@ contract SECP256K1_ORDERetupCartridge is Script {
         // console.logAddress(msg.sender);
         // console.logAddress(tx.origin);
         // console.logAddress(cartridge.owner());
-        uint128[] memory ranges =  new uint128[](3); //[1,5,1000];
+        uint128[] memory ranges =  new uint128[](2); //[1,5,1000];
         ranges[0] = 1;
-        ranges[1] = 5;
-        ranges[2] = 1000;
-        uint128[] memory coefficients = new uint128[](3);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
-        coefficients[0] = 5000000000000000;
+        ranges[1] = 10000;
+        uint128[] memory coefficients = new uint128[](2);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
+        coefficients[0] = 10000000000000000;
         coefficients[1] = 1000000000000000;
-        coefficients[2] = 2000000000000000;
         cartridge.updateBondingCurveParams(
             // newCurrencyToken, newFeeModel, newCartridgeModel, newCartridgeOwnershipModelAddress, newCartridgeBondingCurveModelAddress, newMaxSupply, stepRangesMax, stepCoefficients
             address(0), //currencyAddress,
@@ -71,7 +69,8 @@ contract SECP256K1_ORDERetupCartridge is Script {
             Create2.computeAddress(SALT, keccak256(cartridgeModelCode),DEPLOY_FACTORY),
             ownershipModelAddress,
             Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
-            1000, // max supply
+            10000, // max supply
+            50, // fee config - feeProportionPerK
             ranges,
             coefficients
         );
@@ -84,11 +83,11 @@ contract SECP256K1_ORDERetupCartridge is Script {
         console.logString("Setting uri");
         cartridge.setURI("https://vanguard.rives.io/cartridges/{id}");
 
-        if (OwnershipModelVanguard3(ownershipModelAddress).owner() != operatorAddress && OwnershipModelVanguard3(ownershipModelAddress).owner() == tx.origin) {
+        if (OwnershipModel(ownershipModelAddress).owner() != operatorAddress && OwnershipModel(ownershipModelAddress).owner() == tx.origin) {
             console.logString("Transfering ownership of ownership model from - to");
-            console.logAddress(OwnershipModelVanguard3(ownershipModelAddress).owner());
+            console.logAddress(OwnershipModel(ownershipModelAddress).owner());
             console.logAddress(operatorAddress);
-            OwnershipModelVanguard3(ownershipModelAddress).transferOwnership(operatorAddress);
+            OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
         }
 
         if (cartridge.owner() != operatorAddress && cartridge.owner() == tx.origin) {

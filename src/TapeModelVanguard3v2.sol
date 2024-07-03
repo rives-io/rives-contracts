@@ -1,9 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ITapeModel.sol";
 
-contract TapeModelVanguard3 is ITapeModel {
+contract TapeModelVanguard3v2 is ITapeModel,Ownable {
+    error Tape__CartridgeOwnerNotDefined();
+
+    constructor() Ownable(tx.origin) {}
+
+    // cartridgeOwner
+    mapping (bytes32 => address) public cartridgeOwners;
+
+    // admin
+    function setCartridgeOwner(bytes32 cartridgeId, address cartridgeOwnerAddress) external onlyOwner {
+        cartridgeOwners[cartridgeId] = cartridgeOwnerAddress;
+    }
+
+
     function getRoyaltiesTapes(bytes calldata) override pure external returns (bytes32[] memory) {
         return new bytes32[](0);
     }
@@ -35,15 +49,16 @@ contract TapeModelVanguard3 is ITapeModel {
     // tape_input_index:       Int
     // error_code:             UInt
 
-    function decodeTapeUsers(bytes calldata data) override pure external returns (bytes32,address,address) {
+    function decodeTapeUsers(bytes calldata data) override view external returns (bytes32,address,address) {
         if (data.length == 0) return (bytes32(0),address(0),address(0));
-        (, , , address tapeCreator, , , , , bytes32 tapeId, , uint errorCode) = abi.decode(data,
+        (, bytes32 cartridgeId, , address tapeCreator, , , , , bytes32 tapeId, , uint errorCode) = abi.decode(data,
             (bytes32, bytes32, int, address, uint, int, string, int, bytes32, int, uint)
         );
         
         if (errorCode != 0) revert Tape__ErrorCode();
+        if (cartridgeOwners[cartridgeId] == address(0)) revert Tape__CartridgeOwnerNotDefined();
 
-        return (tapeId, address(0), tapeCreator);
+        return (tapeId, cartridgeOwners[cartridgeId], tapeCreator);
     }
 
     function decodeTapeMetadata(bytes calldata data) override pure external 

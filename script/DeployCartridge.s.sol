@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { CartridgeFixedFeeVanguard3 } from "../src/CartridgeFixedFeeVanguard3.sol";
-import { CartridgeModelVanguard3 } from "../src/CartridgeModelVanguard3.sol";
-import { OwnershipModelVanguard3 } from "../src/OwnershipModelVanguard3.sol";
-import { BondingCurveModelVanguard3 } from "../src/BondingCurveModelVanguard3.sol";
+import { CartridgeProportionalFeeVanguard3v2 as CartridgeFeeModel } from "../src/CartridgeProportionalFeeVanguard3v2.sol";
+import { CartridgeModelVanguard3v2 as CartridgeModel} from "../src/CartridgeModelVanguard3v2.sol";
+import { OwnershipModelVanguard3 as OwnershipModel } from "../src/OwnershipModelVanguard3.sol";
+import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
 import { CartridgeBondUtils } from "../src/CartridgeBondUtils.sol";
 import { Cartridge } from "../src/Cartridge.sol";
 
@@ -19,7 +19,7 @@ contract DeployCartridge is Script {
     bytes32 constant SALT = bytes32(0);
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+        // address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
         // address dappAddress = vm.envAddress("DAPP_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
@@ -28,12 +28,12 @@ contract DeployCartridge is Script {
         // address currencyAddress = address(0);
 
         // Cartridge Fee Model 
-        bytes memory feeModelCode = abi.encodePacked(type(CartridgeFixedFeeVanguard3).creationCode);
+        bytes memory feeModelCode = abi.encodePacked(type(CartridgeFeeModel).creationCode);
         address feeModelAddress = Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY);
         console.logString("Expected feeModelAddress");
         console.logAddress(feeModelAddress);
         if (checkSize(feeModelAddress) == 0) {
-            CartridgeFixedFeeVanguard3 feeModel = new CartridgeFixedFeeVanguard3{salt: SALT}();
+            CartridgeFeeModel feeModel = new CartridgeFeeModel{salt: SALT}();
             console.logString("Deployed feeModelAddress");
             console.logAddress(address(feeModel));
         } else {
@@ -41,12 +41,12 @@ contract DeployCartridge is Script {
         }
         
         // Cartridge Model 
-        bytes memory cartridgeModelCode = abi.encodePacked(type(CartridgeModelVanguard3).creationCode);
+        bytes memory cartridgeModelCode = abi.encodePacked(type(CartridgeModel).creationCode);
         address cartridgeModelAddress = Create2.computeAddress(SALT, keccak256(cartridgeModelCode),DEPLOY_FACTORY);
         console.logString("Expected cartridgeModelAddress");
         console.logAddress(cartridgeModelAddress);
         if (checkSize(cartridgeModelAddress) == 0) {
-            CartridgeModelVanguard3 cartridgeModel = new CartridgeModelVanguard3{salt: SALT}();
+            CartridgeModel cartridgeModel = new CartridgeModel{salt: SALT}();
             console.logString("Deployed cartridgeModelAddress");
             console.logAddress(address(cartridgeModel));
         } else {
@@ -54,12 +54,12 @@ contract DeployCartridge is Script {
         }
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModelVanguard3).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         console.logString("Expected ownershipModelAddress");
         console.logAddress(ownershipModelAddress);
         if (checkSize(ownershipModelAddress) == 0) {
-            OwnershipModelVanguard3 ownershipModel = new OwnershipModelVanguard3{salt: SALT}();
+            OwnershipModel ownershipModel = new OwnershipModel{salt: SALT}();
             console.logString("Deployed ownershipModelAddress");
             console.logAddress(address(ownershipModel));
             // console.logString("Transfering ownership of ownership model from - to");
@@ -72,12 +72,12 @@ contract DeployCartridge is Script {
 
         
         // Bonding Curve Model 
-        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModelVanguard3).creationCode);
+        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModel).creationCode);
         address bcModelAddress = Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY);
         console.logString("Expected bcModelAddress");
         console.logAddress(bcModelAddress);
         if (checkSize(bcModelAddress) == 0) {
-            BondingCurveModelVanguard3 bcModel = new BondingCurveModelVanguard3{salt: SALT}();
+            BondingCurveModel bcModel = new BondingCurveModel{salt: SALT}();
             console.logString("Deployed bcModelAddress");
             console.logAddress(address(bcModel));
         } else {

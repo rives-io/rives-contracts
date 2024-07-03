@@ -5,7 +5,7 @@ import "./IBondingCurveModel.sol";
 
 contract BondingCurveModelVanguard3 is IBondingCurveModel {
     function validateBondingCurve(
-        bytes32, // tapeId
+        bytes32, // id
         uint128[] memory stepRangesMax, 
         uint128[] memory stepCoefficients, uint128 newMaxSupply) external pure returns(BondingCurveStep[] memory) {
 

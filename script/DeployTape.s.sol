@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { TapeFixedFeeVanguard3 } from "../src/TapeFixedFeeVanguard3.sol";
-import { TapeModelVanguard3 } from "../src/TapeModelVanguard3.sol";
-import { OwnershipModelVanguard3 } from "../src/OwnershipModelVanguard3.sol";
-import { BondingCurveModelVanguard3 } from "../src/BondingCurveModelVanguard3.sol";
+import { TapeProportionalFeeVanguard3v2 as TapeFeeModel } from "../src/TapeProportionalFeeVanguard3v2.sol";
+import { TapeModelVanguard3v2 as TapeModel} from "../src/TapeModelVanguard3v2.sol";
+import { OwnershipModelVanguard3 as OwnershipModel } from "../src/OwnershipModelVanguard3.sol";
+import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
 import { TapeBondUtils } from "../src/TapeBondUtils.sol";
 import { Tape } from "../src/Tape.sol";
 
@@ -28,12 +28,12 @@ contract DeployTape is Script {
         // address currencyAddress = address(0);
 
         // Tape Fee Model 
-        bytes memory feeModelCode = abi.encodePacked(type(TapeFixedFeeVanguard3).creationCode);
+        bytes memory feeModelCode = abi.encodePacked(type(TapeFeeModel).creationCode);
         address feeModelAddress = Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY);
         console.logString("Expected feeModelAddress");
         console.logAddress(feeModelAddress);
         if (checkSize(feeModelAddress) == 0) {
-            TapeFixedFeeVanguard3 feeModel = new TapeFixedFeeVanguard3{salt: SALT}();
+            TapeFeeModel feeModel = new TapeFeeModel{salt: SALT}();
             console.logString("Deployed feeModelAddress");
             console.logAddress(address(feeModel));
         } else {
@@ -41,12 +41,12 @@ contract DeployTape is Script {
         }
         
         // Tape Model 
-        bytes memory tapeModelCode = abi.encodePacked(type(TapeModelVanguard3).creationCode);
+        bytes memory tapeModelCode = abi.encodePacked(type(TapeModel).creationCode);
         address tapeModelAddress = Create2.computeAddress(SALT, keccak256(tapeModelCode),DEPLOY_FACTORY);
         console.logString("Expected tapeModelAddress");
         console.logAddress(tapeModelAddress);
         if (checkSize(tapeModelAddress) == 0) {
-            TapeModelVanguard3 tapeModel = new TapeModelVanguard3{salt: SALT}();
+            TapeModel tapeModel = new TapeModel{salt: SALT}();
             console.logString("Deployed tapeModelAddress");
             console.logAddress(address(tapeModel));
         } else {
@@ -54,12 +54,12 @@ contract DeployTape is Script {
         }
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModelVanguard3).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         console.logString("Expected ownershipModelAddress");
         console.logAddress(ownershipModelAddress);
         if (checkSize(ownershipModelAddress) == 0) {
-            OwnershipModelVanguard3 ownershipModel = new OwnershipModelVanguard3{salt: SALT}();
+            OwnershipModel ownershipModel = new OwnershipModel{salt: SALT}();
             console.logString("Deployed ownershipModelAddress");
             console.logAddress(address(ownershipModel));
             // console.logString("Transfering ownership of ownership model from - to");
@@ -72,12 +72,12 @@ contract DeployTape is Script {
 
         
         // Bonding Curve Model 
-        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModelVanguard3).creationCode);
+        bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModel).creationCode);
         address bcModelAddress = Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY);
         console.logString("Expected bcModelAddress");
         console.logAddress(bcModelAddress);
         if (checkSize(bcModelAddress) == 0) {
-            BondingCurveModelVanguard3 bcModel = new BondingCurveModelVanguard3{salt: SALT}();
+            BondingCurveModel bcModel = new BondingCurveModel{salt: SALT}();
             console.logString("Deployed bcModelAddress");
             console.logAddress(address(bcModel));
         } else {

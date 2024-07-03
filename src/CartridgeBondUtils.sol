@@ -15,6 +15,7 @@ contract CartridgeBondUtils is BondUtils {
     struct CartridgeBond {
         BondUtils.BondData bond;
         address feeModel; // immutable
+        uint256 feeConfig; // immutable
         address cartridgeModel; // immutable
         // address[2] addresses; // cartridgeOwner CartridgeCreator; // reduce number of var
         address cartridgeOwner;
@@ -32,15 +33,15 @@ contract CartridgeBondUtils is BondUtils {
     function verifyFeeModel(address newFeeModel) view public {
         if (newFeeModel == address(0)) revert Cartridge__InvalidFeeModel('address');
         ICartridgeFeeModel model = ICartridgeFeeModel(newFeeModel);
-        if(!_checkMethodExists(newFeeModel, abi.encodeWithSignature("getMintFees(uint256,uint256)",0,0), MIN_2BYTES32_LENGTH)) 
+        if(!_checkMethodExists(newFeeModel, abi.encodeWithSignature("getMintFees(uint256,uint256,uint256)",uint256(0),0,0), MIN_2BYTES32_LENGTH)) 
             revert Cartridge__InvalidFeeModel('getMintFees');
-        model.getMintFees(0,0);
-        if(!_checkMethodExists(newFeeModel, abi.encodeWithSignature("getBurnFees(uint256,uint256)",0,0), MIN_2BYTES32_LENGTH)) 
+        model.getMintFees(uint256(0),0,0);
+        if(!_checkMethodExists(newFeeModel, abi.encodeWithSignature("getBurnFees(uint256,uint256,uint256)",uint256(0),0,0), MIN_2BYTES32_LENGTH)) 
             revert Cartridge__InvalidFeeModel('getBurnFees');
-        model.getBurnFees(0,0);
-        if(!_checkMethodExists(newFeeModel, abi.encodeWithSignature("getConsumeFees(uint256)",0), MIN_2BYTES32_LENGTH)) 
+        model.getBurnFees(uint256(0),0,0);
+        if(!_checkMethodExists(newFeeModel, abi.encodeWithSignature("getConsumeFees(uint256,uint256)",uint256(0),0), MIN_2BYTES32_LENGTH)) 
             revert Cartridge__InvalidFeeModel('getConsumeFees');
-        model.getConsumeFees(0);
+        model.getConsumeFees(uint256(0),0);
     }
 
     function verifyCartridgeModel(address newCartridgeModel) view public {
