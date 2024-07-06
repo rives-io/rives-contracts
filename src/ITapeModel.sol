@@ -5,5 +5,5 @@ interface ITapeModel {
     error Tape__ErrorCode();
     function getRoyaltiesTapes(bytes calldata data) view external returns (bytes32[] memory);
     function decodeTapeUsers(bytes calldata data) view external returns (bytes32,address,address);
-    function decodeTapeMetadata(bytes calldata data) view external returns (bytes32, bytes32, int, bytes32, int, bytes32, int);
+    function decodeTapeMetadata(bytes calldata data) view external returns (bytes32, uint, int, bytes32, int, bytes32, int, bytes32, int);
 }

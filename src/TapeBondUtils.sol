@@ -27,7 +27,7 @@ contract TapeBondUtils is BondUtils {
     uint256 private constant MIN_2BYTES32_LENGTH = 63; // uint256 = 32 bytes * 2
     uint256 private constant MIN_3BYTES32_LENGTH = 95; // uint256 = 32 bytes * 3
     uint256 private constant MIN_4BYTES32_LENGTH = 127; // uint256 = 32 bytes * 4
-    uint256 private constant MIN_7BYTES32_LENGTH = 223; // uint256 = 32 bytes * 7
+    uint256 private constant MIN_9BYTES32_LENGTH = 287; // uint256 = 32 bytes * 9
     uint256 private constant MIN_ARRAY_LENGTH = 63; // empty array = 64 bytes = 64 bytes
 
 
@@ -60,7 +60,7 @@ contract TapeBondUtils is BondUtils {
         if(!_checkMethodExists(newTapeModel, abi.encodeWithSignature("decodeTapeUsers(bytes)",""), MIN_3BYTES32_LENGTH)) 
             revert Tape__InvalidTapeModel('decodeTapeUsers');
         model.decodeTapeUsers("");
-        if(!_checkMethodExists(newTapeModel, abi.encodeWithSignature("decodeTapeMetadata(bytes)",""), MIN_7BYTES32_LENGTH)) 
+        if(!_checkMethodExists(newTapeModel, abi.encodeWithSignature("decodeTapeMetadata(bytes)",""), MIN_9BYTES32_LENGTH)) 
             revert Tape__InvalidTapeModel('decodeTapeMetadata');
         model.decodeTapeMetadata("");
     }

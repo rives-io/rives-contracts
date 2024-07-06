@@ -330,7 +330,8 @@ contract Tape is ERC1155, Ownable {
         return feesToDistribute;
     }
 
-    function _transferTapeRoyaltiesFee(bytes32 tapeId, uint256 royaltiesFee) internal _checkTapeBond(tapeId) {
+    function _transferTapeRoyaltiesFee(bytes32 tapeId, uint256 royaltiesFee) internal //_checkTapeBond(tapeId) 
+    {
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
         // transfer fees
@@ -721,7 +722,7 @@ contract Tape is ERC1155, Ownable {
         return tapeBonds[tapeId].bond.steps[tapeBonds[tapeId].bond.steps.length - 1].rangeMax;
     }
 
-    function getTapeData(bytes32 tapeId) external view returns (bytes32, bytes32, int, bytes32, int, bytes32, int) {
+    function getTapeData(bytes32 tapeId) external view returns (bytes32, uint, int, bytes32, int, bytes32, int, bytes32, int) {
         if (tapeBonds[tapeId].tapeOutputData.length == 0) revert Tape__InvalidTape("tapeOutputData");
         return ITapeModel(tapeBonds[tapeId].tapeModel).decodeTapeMetadata(tapeBonds[tapeId].tapeOutputData);
     }

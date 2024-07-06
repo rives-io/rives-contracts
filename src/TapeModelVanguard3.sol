@@ -47,12 +47,22 @@ contract TapeModelVanguard3 is ITapeModel {
     }
 
     function decodeTapeMetadata(bytes calldata data) override pure external 
-        returns (bytes32, bytes32, int, bytes32, int, bytes32, int) 
+        returns (bytes32, uint, int, bytes32, int, bytes32, int, bytes32, int) 
     {
-        if (data.length == 0) return (bytes32(0),bytes32(0),0,bytes32(0),0,bytes32(0),0);
+        if (data.length == 0) return (bytes32(0),0,0,bytes32(0),0,bytes32(0),0,bytes32(0),0);
         
         TapePayloadModel memory payload;
-        (payload.version, payload.cartridgeId, payload.cartridgeInputIndex, , , , payload.ruleId, payload.ruleInputIndex, payload.tapeId, payload.tapeInputIndex, payload.errorCode)
+        // (payload.version, payload.cartridgeId, payload.cartridgeInputIndex, , payload.timestamp, payload.score, payload.ruleId, payload.ruleInputIndex, payload.tapeId, payload.tapeInputIndex, payload.errorCode)
+        //     = abi.decode(data,
+        //         (bytes32, bytes32, int, address, uint, int, string, int, bytes32, int, uint)
+        // );
+
+        (payload.version, payload.cartridgeId, payload.cartridgeInputIndex, , payload.timestamp, payload.score, , , , , )
+            = abi.decode(data,
+                (bytes32, bytes32, int, address, uint, int, string, int, bytes32, int, uint)
+        );
+
+        (, , , , , , payload.ruleId, payload.ruleInputIndex, payload.tapeId, payload.tapeInputIndex, payload.errorCode)
             = abi.decode(data,
                 (bytes32, bytes32, int, address, uint, int, string, int, bytes32, int, uint)
         );
@@ -61,7 +71,7 @@ contract TapeModelVanguard3 is ITapeModel {
 
         bytes32 ruleId = abi.decode(abi.encodePacked(fromHex(payload.ruleId)),(bytes32));
 
-        return (payload.version, payload.cartridgeId, payload.cartridgeInputIndex, ruleId, payload.ruleInputIndex, 
+        return (payload.version, payload.timestamp, payload.score, payload.cartridgeId, payload.cartridgeInputIndex, ruleId, payload.ruleInputIndex, 
             payload.tapeId, payload.tapeInputIndex );
     }
 

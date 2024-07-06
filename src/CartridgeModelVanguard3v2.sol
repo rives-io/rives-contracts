@@ -45,9 +45,9 @@ contract CartridgeModelVanguard3v2 is ICartridgeModel,Ownable {
     }
 
     function decodeCartridgeMetadata(bytes calldata) override pure external 
-        returns (bytes32, bytes32, int) 
+        returns (bytes32, uint, bytes32, int) 
     {
-        return (bytes32(0),bytes32(0),0);
+        return (bytes32(0),0,bytes32(0),0);
     }
 
 }

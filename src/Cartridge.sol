@@ -501,8 +501,11 @@ contract Cartridge is ERC1155, Ownable {
 
         if (cartridgeId != decodedCartridgeId) revert Cartridge__InvalidCartridge('cartridgeId');
 
+        (, uint timestamp, ,) = ICartridgeModel(bond.cartridgeModel).decodeCartridgeMetadata(_payload);
+
         bond.cartridgeOwner = cartridgeOwner;
         bond.eventData = _payload;
+        bond.lastUpdate = timestamp;
 
         uint256 cofToDistribute;
 
@@ -537,6 +540,34 @@ contract Cartridge is ERC1155, Ownable {
         return cartridgeId;
     }
 
+    function validateTransferCartridge(
+        address dapp,
+        bytes32 cartridgeId,
+        bytes calldata _payload,
+        Proof calldata _v) internal returns (bytes32) {
+
+        CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
+
+        if (bond.eventData.length == 0) revert Cartridge__InvalidCartridge('not validated');
+
+        // verify dapp
+        if (!dappAddresses[dapp]) revert Cartridge__InvalidDapp();
+
+        // validate notice
+        ICartesiDApp(dapp).validateNotice(_payload,_v);
+
+        (bytes32 decodedCartridgeId,address cartridgeOwner) = ICartridgeModel(bond.cartridgeModel).decodeCartridgeUser(_payload);
+
+        if (cartridgeId != decodedCartridgeId) revert Cartridge__InvalidCartridge('cartridgeId');
+
+        (, uint timestamp, ,) = ICartridgeModel(bond.cartridgeModel).decodeCartridgeMetadata(_payload);
+
+        bond.cartridgeOwner = cartridgeOwner;
+        bond.eventData = _payload;
+        bond.lastUpdate = timestamp;
+
+        return cartridgeId;
+    }
 
     // withdraw
 
@@ -641,7 +672,7 @@ contract Cartridge is ERC1155, Ownable {
         return cartridgeBonds[cartridgeId].bond.steps[cartridgeBonds[cartridgeId].bond.steps.length - 1].rangeMax;
     }
 
-    function getCartridgeData(bytes32 cartridgeId) external view returns (bytes32, bytes32, int) {
+    function getCartridgeData(bytes32 cartridgeId) external view returns (bytes32, uint, bytes32, int) {
         if (cartridgeBonds[cartridgeId].eventData.length == 0) revert Cartridge__InvalidCartridge("cartridgeOutputData");
         return ICartridgeModel(cartridgeBonds[cartridgeId].cartridgeModel).decodeCartridgeMetadata(cartridgeBonds[cartridgeId].eventData);
     }
