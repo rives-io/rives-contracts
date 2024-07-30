@@ -4,3 +4,5 @@ broadcast
 node_modules
 package-lock.json
 .env*
+deploys
+out
