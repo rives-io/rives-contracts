@@ -28,6 +28,7 @@ dev-client:
 
 
 deploy: deploy-proxy deploy-assets
+	@echo "deployed everything"
 
 deploy-assets: --load-env
 	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/DeployTape.s.sol  --rpc-url ${RPC_URL} --broadcast
@@ -46,9 +47,10 @@ update-proxy: --load-env
 	 forge script script/SetDappAddress.s.sol --rpc-url ${RPC_URL} --broadcast
 
 
-deploy-%: deploy-assets-% deploy-proxy-%
+deploy-%: deploy-proxy-% deploy-assets-%
+	@echo "deployed everything"
 
-deploy-assets-%: ${ENVFILE}.% deploy-proxy-%
+deploy-assets-%: ${ENVFILE}.%
 	@$(eval include include $<)
 	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/DeployTape.s.sol  --rpc-url ${RPC_URL} --broadcast
 	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/SetupTape.s.sol  --rpc-url ${RPC_URL} --broadcast

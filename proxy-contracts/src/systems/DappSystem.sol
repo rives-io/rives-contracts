@@ -101,7 +101,7 @@ contract DappSystem is System {
     (bool success, bytes memory data) = _dapp.staticcall(abi.encodeWithSignature("getTemplateHash()"));
     if (!success || data.length != 32) revert DappSystem__InvalidDapp();
     // comment for nonodo /devnet
-    // if (ICartesiDApp(_dapp).getTemplateHash() != bytes32(0)) revert DappSystem__InvalidDapp();
+    if (ICartesiDApp(_dapp).getTemplateHash() != bytes32(0)) revert DappSystem__InvalidDapp();
 
     // DebugCounter.set(c);
     DappAddressNamespace.set(_dapp, bytes32(abi.encodePacked(systemResource)));
