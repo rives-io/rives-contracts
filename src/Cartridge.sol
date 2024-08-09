@@ -21,6 +21,7 @@ contract Cartridge is ERC1155, Ownable {
     error Cartridge__InvalidUser();
     error Cartridge__InvalidDapp();
     error Cartridge__InvalidCartridge(string reason);
+    error Cartridge__InvalidTransfer(string reason);
     error Cartridge__SlippageLimitExceeded();
     error Cartridge__InsufficientFunds();
     error Cartridge__ChangeError();
@@ -558,9 +559,11 @@ contract Cartridge is ERC1155, Ownable {
 
         (bytes32 decodedCartridgeId,address cartridgeOwner) = ICartridgeModel(bond.cartridgeModel).decodeCartridgeUser(_payload);
 
-        if (cartridgeId != decodedCartridgeId) revert Cartridge__InvalidCartridge('cartridgeId');
+        if (cartridgeId != decodedCartridgeId) revert Cartridge__InvalidTransfer('cartridgeId');
 
         (, uint timestamp, ,) = ICartridgeModel(bond.cartridgeModel).decodeCartridgeMetadata(_payload);
+
+        if (bond.lastUpdate >= timestamp) revert Cartridge__InvalidTransfer('timestamp');
 
         bond.cartridgeOwner = cartridgeOwner;
         bond.eventData = _payload;

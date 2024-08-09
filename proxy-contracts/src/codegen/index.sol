@@ -6,5 +6,7 @@ pragma solidity >=0.8.24;
 import { InputBoxAddress } from "./tables/InputBoxAddress.sol";
 import { DappAddressNamespace } from "./tables/DappAddressNamespace.sol";
 import { NamespaceDappAddress } from "./tables/NamespaceDappAddress.sol";
+import { CatridgeAssetAddress } from "./tables/CatridgeAssetAddress.sol";
+import { CartridgeCreator } from "./tables/CartridgeCreator.sol";
 import { DappMessagesDebug, DappMessagesDebugData } from "./tables/DappMessagesDebug.sol";
 import { DebugCounter } from "./tables/DebugCounter.sol";

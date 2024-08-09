@@ -9,7 +9,15 @@ pragma solidity >=0.8.24;
  * @dev This interface is automatically generated from the corresponding system contract. Do not edit manually.
  */
 interface ICoreSystem {
-  function core__prepareInput(bytes calldata) external pure returns (bool);
+  error CoreSystem__NoCartridgeBalance();
+
+  function core__getCartridgeIdFromHash(bytes calldata payload) external pure returns (bytes32);
+
+  function core__getCartridgeIdFromVerifyPayload(bytes calldata payload) external pure returns (bytes32);
+
+  function core__getCartridgeCreator(bytes32 cartridgeId) external view returns (address);
+
+  function core__prepareInput(bytes calldata payload) external returns (bool);
 
   function core__setDappAddress(address _dapp) external;
 }

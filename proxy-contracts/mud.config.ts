@@ -43,6 +43,19 @@ export default defineWorld({
     //   },
     //   key: ["namespace"],
     // },
+    CatridgeAssetAddress: {
+      schema: {
+        value: "address",
+      },
+      key: [],
+    },
+    CartridgeCreator: {
+      schema: {
+        cartridgeId: "bytes32", 
+        owner: "address",
+      },
+      key: ["cartridgeId"],
+    },
     DappMessagesDebug: {
       schema: { 
         index: "uint32", 

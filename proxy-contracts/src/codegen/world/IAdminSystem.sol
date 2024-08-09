@@ -9,5 +9,9 @@ pragma solidity >=0.8.24;
  * @dev This interface is automatically generated from the corresponding system contract. Do not edit manually.
  */
 interface IAdminSystem {
+  error AdminSystem__InvalidOwner();
+
   function core__setInputBoxAddress(address _inputBox) external;
+
+  function core__setCatridgeAssetAddress(address _cartridgeAsset) external;
 }
