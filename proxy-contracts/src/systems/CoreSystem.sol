@@ -11,7 +11,7 @@ import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
 import { AccessControl } from "@latticexyz/world/src/AccessControl.sol";
 
 
-import { CatridgeAssetAddress, CartridgeCreator, DebugCounter, DappMessagesDebug} from "../codegen/index.sol";
+import { CatridgeAssetAddress, CartridgeCreator, TapeAssetAddress, TapeCreator, DebugCounter, DappMessagesDebug} from "../codegen/index.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
@@ -21,18 +21,23 @@ interface WorldWithFuncs {
 }
 
 contract CoreSystem is System {
-  error CoreSystem__NoCartridgeBalance();
+  error CoreSystem__NoCartridgeBalance(bytes32);
+  error CoreSystem__NoTapeBalance(bytes32);
 
   bytes4 constant insertCartridgeSelector = bytes4(0x5eab7461);
   bytes4 constant verifySelector = bytes4(0xdb690895);
   bytes4 constant registerVerificationSelector = bytes4(0xa98dfd7f);
   
-  function getCartridgeIdFromHash(bytes calldata payload) public pure returns (bytes32) {
-    return bytes32(payload[:6]);
+  function getCartridgeIdFromHash(bytes calldata payloadHash) public pure returns (bytes32) {
+    return bytes32(payloadHash[:6]);
   }
 
   function getCartridgeIdFromVerifyPayload(bytes calldata payload) public pure returns (bytes32) {
     return bytes32(payload[4:10]);
+  }
+
+  function getTapeIdFromRuleAndHash(bytes calldata ruleId,bytes calldata payloadHash) public pure returns (bytes32) {
+    return bytes32(abi.encodePacked(ruleId[:20],payloadHash[:12]));
   }
 
   // function getCartridgeIdFromVerifyPayload(bytes calldata payload) public pure returns (bytes32) {
@@ -46,6 +51,10 @@ contract CoreSystem is System {
 
   function getCartridgeCreator(bytes32 cartridgeId) public view returns (address) {
     return CartridgeCreator.get(cartridgeId);
+  }
+
+  function getTapeCreator(bytes32 tapeId) public view returns (address) {
+    return TapeCreator.get(tapeId);
   }
 
   function prepareInput(bytes calldata payload) public returns (bool) {
@@ -71,7 +80,17 @@ contract CoreSystem is System {
       bytes32 cartridgeId = this.getCartridgeIdFromVerifyPayload(payload);
       DappMessagesDebug.set(c++, "verify cartridgeId", abi.encode(cartridgeId));
       if (ERC1155(CatridgeAssetAddress.get()).balanceOf(tx.origin,uint(cartridgeId)) < 1) 
-        revert CoreSystem__NoCartridgeBalance();
+        revert CoreSystem__NoCartridgeBalance(cartridgeId);
+      (,,bytes memory tape,,bytes32[] memory tapesUsed,) = abi.decode(payload[4:],(bytes32,bytes32,bytes,int,bytes32[],bytes));
+      for (uint256 i; i < tapesUsed.length; ++i) {
+        if (ERC1155(TapeAssetAddress.get()).balanceOf(tx.origin,uint(tapesUsed[i])) < 1) 
+          revert CoreSystem__NoTapeBalance(tapesUsed[i]);
+      }
+      bytes32 payloadHash = keccak256(tape);
+      DappMessagesDebug.set(c++, "verify payloadHash", abi.encode(payloadHash));
+      bytes32 tapeId = this.getTapeIdFromRuleAndHash(abi.encodePacked(payload[4:36]), abi.encodePacked(payloadHash));
+      DappMessagesDebug.set(c++, "verify tapeId", abi.encode(tapeId));
+      TapeCreator.set(tapeId, tx.origin);
     }
  
     DebugCounter.set(c);

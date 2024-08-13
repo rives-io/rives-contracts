@@ -25,9 +25,6 @@ contract PostDeploy is Script {
     // Start broadcasting transactions from the deployer account
     vm.startBroadcast(deployerPrivateKey);
 
-    IWorld(worldAddress).core__setInputBoxAddress(0x59b22D57D4f067708AB0c00552767405926dc768);
-    IWorld(worldAddress).core__setCatridgeAssetAddress(0x6c1e41F47174DeB54c7B64Acaf1A465BC083DcAe);
-
     ResourceId coreDappSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "DappSystem");
     console.logString("==== DEBUG ==== coreDappSystem id: ");
     console.logBytes(abi.encodePacked(coreDappSystem));
@@ -42,7 +39,11 @@ contract PostDeploy is Script {
     selector = world.registerRootFunctionSelector(coreDappSystem, "setNamespaceSystem(address,bytes32)","setNamespaceSystem(address,bytes32)");
     console.logBytes(abi.encodePacked(selector));
     
-    selector = world.registerRootFunctionSelector(WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem"), "getCartridgeCreator(bytes32)","getCartridgeCreator(bytes32)");
+    ResourceId coreSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem");
+    selector = world.registerRootFunctionSelector(coreSystem, "getCartridgeCreator(bytes32)","getCartridgeCreator(bytes32)");
+    console.logBytes(abi.encodePacked(selector));
+
+    selector = world.registerRootFunctionSelector(coreSystem, "getTapeCreator(bytes32)","getTapeCreator(bytes32)");
     console.logBytes(abi.encodePacked(selector));
     
     console.logString("tx.origin:");

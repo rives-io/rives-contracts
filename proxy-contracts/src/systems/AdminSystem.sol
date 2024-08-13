@@ -14,7 +14,7 @@ import { NamespaceOwner } from "@latticexyz/world/src/codegen/tables/NamespaceOw
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 
-import { InputBoxAddress, CatridgeAssetAddress } from "../codegen/index.sol";
+import { InputBoxAddress, CatridgeAssetAddress, TapeAssetAddress } from "../codegen/index.sol";
 import "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
 
 contract AdminSystem is System {
@@ -35,6 +35,11 @@ contract AdminSystem is System {
   function setCatridgeAssetAddress(address _cartridgeAsset) public _checkOwner() {
     // set dapp address
     CatridgeAssetAddress.set(_cartridgeAsset);
+  }
+
+  function setTapeAssetAddress(address _tapeAsset) public _checkOwner() {
+    // set dapp address
+    TapeAssetAddress.set(_tapeAsset);
   }
 
 }

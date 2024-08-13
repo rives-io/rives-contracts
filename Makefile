@@ -31,20 +31,20 @@ deploy: deploy-proxy deploy-assets
 	@echo "deployed everything"
 
 deploy-assets: --load-env
-	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/DeployTape.s.sol  --rpc-url ${RPC_URL} --broadcast
-	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/SetupTape.s.sol  --rpc-url ${RPC_URL} --broadcast
-	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/DeployCartridge.s.sol  --rpc-url ${RPC_URL} --broadcast
-	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/SetupCartridge.s.sol  --rpc-url ${RPC_URL} --broadcast
+	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/DeployTape.s.sol  --rpc-url ${RPC_URL} --broadcast --via-ir
+	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/SetupTape.s.sol  --rpc-url ${RPC_URL} --broadcast --via-ir
+	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/DeployCartridge.s.sol  --rpc-url ${RPC_URL} --broadcast --via-ir
+	PRIVATE_KEY=${PRIVATE_KEY} DAPP_ADDRESS=${DAPP_ADDRESS} OPERATOR_ADDRESS=${OPERATOR_ADDRESS} forge script script/SetupCartridge.s.sol  --rpc-url ${RPC_URL} --broadcast --via-ir
 
 deploy-proxy: --load-env
 	cd proxy-contracts/ && PRIVATE_KEY=${PRIVATE_KEY} pnpm mud deploy --salt 0x0000000000000000000000000000000000000000000000000000000000000000 --rpc ${RPC_URL}
 	cd proxy-contracts/ && PRIVATE_KEY=${PRIVATE_KEY} WORLD_ADDRESS=${WORLD_ADDRESS} DAPP_ADDRESS=${DAPP_ADDRESS} \
-	 forge script script/SetDappAddress.s.sol --rpc-url ${RPC_URL} --broadcast
+	 forge script script/SetupResources.s.sol --rpc-url ${RPC_URL} --broadcast
 
 update-proxy: --load-env
-	cd proxy-contracts/ && PRIVATE_KEY=${PRIVATE_KEY} pnpm mud deploy --salt 0x0000000000000000000000000000000000000000000000000000000000000000 --rpc ${RPC_URL} --world-address ${WORLD_ADDRESS}
+	cd proxy-contracts/ && PRIVATE_KEY=${PRIVATE_KEY} pnpm mud deploy --salt 0x0000000000000000000000000000000000000000000000000000000000000000 --rpc ${RPC_URL} --world-address ${WORLD_ADDRESS} 
 	cd proxy-contracts/ && PRIVATE_KEY=${PRIVATE_KEY} WORLD_ADDRESS=${WORLD_ADDRESS} DAPP_ADDRESS=${DAPP_ADDRESS} \
-	 forge script script/SetDappAddress.s.sol --rpc-url ${RPC_URL} --broadcast
+	 forge script script/SetupResources.s.sol --rpc-url ${RPC_URL} --broadcast
 
 
 deploy-%: deploy-proxy-% deploy-assets-%

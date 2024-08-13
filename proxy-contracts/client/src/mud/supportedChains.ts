@@ -11,9 +11,27 @@
  */
 
 import { MUDChain, mudFoundry, redstone, garnet } from "@latticexyz/common/chains";
+import { defineChain } from 'viem'
 
 /*
  * See https://mud.dev/tutorials/minimal/deploy#run-the-user-interface
  * for instructions on how to add networks.
  */
-export const supportedChains: MUDChain[] = [mudFoundry, redstone, garnet];
+
+export const rivesDevnetChain = defineChain({
+    id: 42069,
+    name: 'Rives Devnet',
+    nativeCurrency: {
+      decimals: 18,
+      name: 'Rives Ether',
+      symbol: 'RETH',
+    },
+    rpcUrls: {
+      default: {
+        http: ['https://anvil.dev.rives.io'],
+        webSocket: ['wss://anvil.dev.rives.io'],
+      },
+    },
+});
+
+export const supportedChains: MUDChain[] = [mudFoundry, redstone, garnet, rivesDevnetChain];

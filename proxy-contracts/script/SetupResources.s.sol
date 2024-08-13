@@ -7,7 +7,7 @@ import { StoreSwitch } from "@latticexyz/store/src/StoreSwitch.sol";
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
 import { ROOT_NAMESPACE, RESOURCE_NAMESPACE } from "@latticexyz/world/src/constants.sol";
 import { ResourceId, WorldResourceIdLib, WorldResourceIdInstance } from "@latticexyz/world/src/WorldResourceId.sol";
-import { DappAddressNamespace, NamespaceDappAddress } from "../src/codegen/index.sol";
+import { DappAddressNamespace, NamespaceDappAddress, InputBoxAddress, CatridgeAssetAddress, TapeAssetAddress } from "../src/codegen/index.sol";
 import { AccessControl } from "@latticexyz/world/src/AccessControl.sol";
 
 import { WorldRegistrationSystem } from "@latticexyz/world/src/modules/init/implementations/WorldRegistrationSystem.sol";
@@ -21,6 +21,10 @@ contract SetDappAddress is Script {
   function run() external {
     address dappAddress = vm.envAddress("DAPP_ADDRESS");
     address worldAddress = vm.envAddress("WORLD_ADDRESS");
+    address inputBoxAddress = 0x59b22D57D4f067708AB0c00552767405926dc768;
+    address cartridgeAssetAddress = 0x581063BaaF2EfCe7087c2768A9633Ff955c1E53A;
+    address tapeAssetAddress = 0x695c1539842bF5f60ec745bF0D1f1EDEB2De2646;
+
     // Specify a store so that you can use tables directly in PostDeploy
     StoreSwitch.setStoreAddress(worldAddress);
 
@@ -30,6 +34,30 @@ contract SetDappAddress is Script {
     // Start broadcasting transactions from the deployer account
     vm.startBroadcast(deployerPrivateKey);
 
+    console.logString("Current inputBox address is:");
+    console.logAddress(InputBoxAddress.get());
+    if (InputBoxAddress.get() != inputBoxAddress){
+      console.logString("Didn't match, updating inputBox address to:");
+      console.logAddress(inputBoxAddress);
+      IWorld(worldAddress).core__setInputBoxAddress(inputBoxAddress);
+    }
+    
+    console.logString("Current cartridge asset address is:");
+    console.logAddress(CatridgeAssetAddress.get());
+    if (CatridgeAssetAddress.get() != cartridgeAssetAddress){
+      console.logString("Didn't match, updating cartridge asset address to:");
+      console.logAddress(cartridgeAssetAddress);
+      IWorld(worldAddress).core__setCatridgeAssetAddress(cartridgeAssetAddress);
+    }
+    
+    console.logString("Current tape asset address is:");
+    console.logAddress(TapeAssetAddress.get());
+    if (TapeAssetAddress.get() != tapeAssetAddress){
+      console.logString("Didn't match, updating tape asset address to:");
+      console.logAddress(tapeAssetAddress);
+      IWorld(worldAddress).core__setTapeAssetAddress(tapeAssetAddress);
+    }
+    
     ResourceId coreSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem");
 
     console.logString("Current dapp address is:");

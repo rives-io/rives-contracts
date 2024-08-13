@@ -8,5 +8,7 @@ import { DappAddressNamespace } from "./tables/DappAddressNamespace.sol";
 import { NamespaceDappAddress } from "./tables/NamespaceDappAddress.sol";
 import { CatridgeAssetAddress } from "./tables/CatridgeAssetAddress.sol";
 import { CartridgeCreator } from "./tables/CartridgeCreator.sol";
+import { TapeAssetAddress } from "./tables/TapeAssetAddress.sol";
+import { TapeCreator } from "./tables/TapeCreator.sol";
 import { DappMessagesDebug, DappMessagesDebugData } from "./tables/DappMessagesDebug.sol";
 import { DebugCounter } from "./tables/DebugCounter.sol";

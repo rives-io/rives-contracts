@@ -56,6 +56,19 @@ export default defineWorld({
       },
       key: ["cartridgeId"],
     },
+    TapeAssetAddress: {
+      schema: {
+        value: "address",
+      },
+      key: [],
+    },
+    TapeCreator: {
+      schema: {
+        tapeId: "bytes32", 
+        owner: "address",
+      },
+      key: ["tapeId"],
+    },
     DappMessagesDebug: {
       schema: { 
         index: "uint32", 

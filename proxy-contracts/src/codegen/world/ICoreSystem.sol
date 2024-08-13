@@ -9,13 +9,21 @@ pragma solidity >=0.8.24;
  * @dev This interface is automatically generated from the corresponding system contract. Do not edit manually.
  */
 interface ICoreSystem {
-  error CoreSystem__NoCartridgeBalance();
+  error CoreSystem__NoCartridgeBalance(bytes32);
+  error CoreSystem__NoTapeBalance(bytes32);
 
-  function core__getCartridgeIdFromHash(bytes calldata payload) external pure returns (bytes32);
+  function core__getCartridgeIdFromHash(bytes calldata payloadHash) external pure returns (bytes32);
 
   function core__getCartridgeIdFromVerifyPayload(bytes calldata payload) external pure returns (bytes32);
 
+  function core__getTapeIdFromRuleAndHash(
+    bytes calldata ruleId,
+    bytes calldata payloadHash
+  ) external pure returns (bytes32);
+
   function core__getCartridgeCreator(bytes32 cartridgeId) external view returns (address);
+
+  function core__getTapeCreator(bytes32 tapeId) external view returns (address);
 
   function core__prepareInput(bytes calldata payload) external returns (bool);
 

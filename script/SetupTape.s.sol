@@ -7,8 +7,8 @@ import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
 import { TapeProportionalFeeVanguard3v2 as TapeFeeModel } from "../src/TapeProportionalFeeVanguard3v2.sol";
-import { TapeModelVanguard3v2 as TapeModel} from "../src/TapeModelVanguard3v2.sol";
-import { OwnershipModelVanguard3 as OwnershipModel } from "../src/OwnershipModelVanguard3.sol";
+import { TapeModelVanguard4 as TapeModel} from "../src/TapeModelVanguard4.sol";
+import { TapeOwnershipModelVanguard4 as OwnershipModel } from "../src/TapeOwnershipModelVanguard4.sol";
 import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
 import { TapeBondUtils } from "../src/TapeBondUtils.sol";
 import { Tape } from "../src/Tape.sol";

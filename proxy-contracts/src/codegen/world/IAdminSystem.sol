@@ -14,4 +14,6 @@ interface IAdminSystem {
   function core__setInputBoxAddress(address _inputBox) external;
 
   function core__setCatridgeAssetAddress(address _cartridgeAsset) external;
+
+  function core__setTapeAssetAddress(address _tapeAsset) external;
 }
