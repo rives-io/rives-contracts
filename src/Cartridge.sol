@@ -45,7 +45,7 @@ contract Cartridge is ERC1155, Ownable {
     address public cartridgeBondUtilsAddress;
     address public cartridgeOwnershipModelAddress;
     address public cartridgeBondingCurveModelAddress;
-    uint128 public maxSupply;
+    uint256 public maxSupply;
     uint256 public feeConfig;
     address protocolWallet;
 
@@ -72,9 +72,9 @@ contract Cartridge is ERC1155, Ownable {
         // address newCartridgeOwnershipModelAddress,
         // address newCartridgeBondingCurveModelAddress,
         // address newCartridgeBondUtilsAddress,
-        // uint128 newMaxSupply,
-        // uint128[] memory stepRangesMax, 
-        // uint128[] memory stepCoefficients
+        // uint256 newMaxSupply,
+        // uint256[] memory stepRangesMax, 
+        // uint256[] memory stepCoefficients
     ) Ownable(tx.origin) ERC1155("") {
         protocolWallet = tx.origin;
 
@@ -154,10 +154,10 @@ contract Cartridge is ERC1155, Ownable {
         address newCartridgeModel,
         address newCartridgeOwnershipModelAddress,
         address newCartridgeBondingCurveModelAddress,
-        uint128 newMaxSupply,
+        uint256 newMaxSupply,
         uint256 newFeeConfig,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients) internal 
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients) internal 
     {
 
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCurrencyToken(newCurrencyToken);
@@ -196,8 +196,8 @@ contract Cartridge is ERC1155, Ownable {
         //     // }
 
         //     bondingCurveSteps.push(IBondingCurveModel.BondingCurveStep({
-        //         rangeMax: uint128(stepRangeMax),
-        //         coefficient: uint128(stepCoefficient)
+        //         rangeMax: uint256(stepRangeMax),
+        //         coefficient: uint256(stepCoefficient)
         //     }));
         // }
         currencyTokenAddress = newCurrencyToken;
@@ -233,10 +233,10 @@ contract Cartridge is ERC1155, Ownable {
         address newCartridgeModel,
         address newCartridgeOwnershipModelAddress,
         address newCartridgeBondingCurveModelAddress,
-        uint128 newMaxSupply,
+        uint256 newMaxSupply,
         uint256 newFeeConfig,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients) external onlyOwner {
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients) external onlyOwner {
 
         _updateBondingCurveParams(
             newCurrencyToken,
@@ -443,8 +443,8 @@ contract Cartridge is ERC1155, Ownable {
     function setCartridgeParamsCustom(
         bytes32 cartridgeId,
         uint256 bondFeeConfig,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients,
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients,
         bool creatorAllocation) public _checkCartridgeOwner(cartridgeId) {
 
         IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(cartridgeBondingCurveModelAddress).validateBondingCurve(cartridgeId,stepRangesMax,stepCoefficients,maxSupply);
@@ -462,8 +462,8 @@ contract Cartridge is ERC1155, Ownable {
         bytes calldata _payload,
         Proof calldata _v,
         uint256 bondFeeConfig,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients,
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients,
         bool creatorAllocation) external returns (bytes32) {
 
         setCartridgeParamsCustom(cartridgeId,bondFeeConfig,stepRangesMax,stepCoefficients,creatorAllocation);
@@ -671,7 +671,7 @@ contract Cartridge is ERC1155, Ownable {
     //     return cartridgeBonds[cartridgeId].steps;
     // }
 
-    function maxCartridgeSupply(bytes32 cartridgeId) external view returns (uint128) {
+    function maxCartridgeSupply(bytes32 cartridgeId) external view returns (uint256) {
         return cartridgeBonds[cartridgeId].bond.steps[cartridgeBonds[cartridgeId].bond.steps.length - 1].rangeMax;
     }
 

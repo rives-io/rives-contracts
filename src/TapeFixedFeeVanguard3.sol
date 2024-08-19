@@ -5,10 +5,10 @@ import "./ITapeFeeModel.sol";
 
 contract TapeFixedFeeVanguard3 is ITapeFeeModel {
 
-    // uint128 constant tapeCreatorFee = 1000; // for 6 decimals
-    // uint128 constant protocolFee = 500; // for 6 decimals
-    uint128 constant tapeCreatorFee = 100000000000000; // for 18 decimals
-    uint128 constant protocolFee = 50000000000000; // for 18 decimals
+    // uint256 constant tapeCreatorFee = 1000; // for 6 decimals
+    // uint256 constant protocolFee = 500; // for 6 decimals
+    uint256 constant tapeCreatorFee = 100000000000000; // for 18 decimals
+    uint256 constant protocolFee = 50000000000000; // for 18 decimals
 
     function getMintFees(
         uint256 amount,

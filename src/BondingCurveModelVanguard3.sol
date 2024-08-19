@@ -6,8 +6,8 @@ import "./IBondingCurveModel.sol";
 contract BondingCurveModelVanguard3 is IBondingCurveModel {
     function validateBondingCurve(
         bytes32, // id
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients, uint128 newMaxSupply) external pure returns(BondingCurveStep[] memory) {
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients, uint256 newMaxSupply) external pure returns(BondingCurveStep[] memory) {
 
         if (stepRangesMax[stepRangesMax.length - 1] > newMaxSupply) revert BC__InvalidBondParams('MAX_SUPPLY');
 
@@ -30,8 +30,8 @@ contract BondingCurveModelVanguard3 is IBondingCurveModel {
             // }
 
             steps[i] = BondingCurveStep({
-                rangeMax: uint128(stepRangeMax),
-                coefficient: uint128(stepCoefficient)
+                rangeMax: uint256(stepRangeMax),
+                coefficient: uint256(stepCoefficient)
             });
             lastRangeMax = stepRangeMax;
         }
@@ -39,7 +39,7 @@ contract BondingCurveModelVanguard3 is IBondingCurveModel {
         return  steps;
     }
 
-    function validateBondParams(uint256 maxSteps, uint128[] memory stepRangesMax, uint128[] memory stepCoefficients) pure external {
+    function validateBondParams(uint256 maxSteps, uint256[] memory stepRangesMax, uint256[] memory stepCoefficients) pure external {
         if (stepRangesMax.length == 0 || stepRangesMax.length > maxSteps) revert BC__InvalidBondParams('INVALID_STEP_LENGTH');
         if (stepCoefficients.length != stepRangesMax.length) revert BC__InvalidBondParams('STEP_LENGTH_DO_NOT_MATCH');
         // Last value or the rangeTo must be the same as the maxSupply

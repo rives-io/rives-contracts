@@ -56,10 +56,10 @@ contract SECP256K1_ORDERetupCartridge is Script {
         // console.logAddress(msg.sender);
         // console.logAddress(tx.origin);
         // console.logAddress(cartridge.owner());
-        uint128[] memory ranges =  new uint128[](2); //[1,5,1000];
+        uint256[] memory ranges =  new uint256[](2); //[1,5,1000];
         ranges[0] = 1;
         ranges[1] = 10000;
-        uint128[] memory coefficients = new uint128[](2);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
+        uint256[] memory coefficients = new uint256[](2);//[uint256(1000000000000000),uint256(1000000000000000),uint256(2000000000000000)];
         coefficients[0] = 10000000000000000;
         coefficients[1] = 1000000000000000;
         cartridge.updateBondingCurveParams(
@@ -69,7 +69,7 @@ contract SECP256K1_ORDERetupCartridge is Script {
             Create2.computeAddress(SALT, keccak256(cartridgeModelCode),DEPLOY_FACTORY),
             ownershipModelAddress,
             Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
-            10000, // max supply
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, // max supply
             50, // fee config - feeProportionPerK
             ranges,
             coefficients

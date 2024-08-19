@@ -5,7 +5,7 @@ import "./ICartridgeFeeModel.sol";
 
 contract CartridgeProportionalFeeVanguard3v2 is ICartridgeFeeModel {
 
-    uint128 constant protocolFeeProportionPerK = 100;
+    uint256 constant protocolFeeProportionPerK = 100;
 
     function getMintFees(
         uint256 feeProportionPerK,

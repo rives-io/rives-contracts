@@ -30,7 +30,7 @@ contract Tape is ERC1155, Ownable {
     address public feeModelAddress;
     address public tapeModelAddress;
     address public tapeBondUtilsAddress;
-    uint128 public maxSupply;
+    uint256 public maxSupply;
     address protocolWallet;
 
     // Tapes
@@ -51,9 +51,9 @@ contract Tape is ERC1155, Ownable {
         address newFeeModel,
         address newTapeModel,
         address newTapeBondUtilsAddress,
-        uint128 newMaxSupply,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients
+        uint256 newMaxSupply,
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients
     ) Ownable(msg.sender) ERC1155("") {
         protocolWallet = newProtocolWallet;
 
@@ -99,9 +99,9 @@ contract Tape is ERC1155, Ownable {
         address newCurrencyToken,
         address newFeeModel,
         address newTapeModel,
-        uint128 newMaxSupply,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients) internal 
+        uint256 newMaxSupply,
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients) internal 
     {
 
         TapeBondUtils(tapeBondUtilsAddress).verifyCurrencyToken(newCurrencyToken);
@@ -130,8 +130,8 @@ contract Tape is ERC1155, Ownable {
             // }
 
             bondingCurveSteps.push(TapeBondUtils.BondingCurveStep({
-                rangeMax: uint128(stepRangeMax),
-                coefficient: uint128(stepCoefficient)
+                rangeMax: uint256(stepRangeMax),
+                coefficient: uint256(stepCoefficient)
             }));
         }
         currencyTokenAddress = newCurrencyToken;
@@ -162,9 +162,9 @@ contract Tape is ERC1155, Ownable {
         address newCurrencyToken,
         address newFeeModel,
         address newTapeModel,
-        uint128 newMaxSupply,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients) external onlyOwner {
+        uint256 newMaxSupply,
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients) external onlyOwner {
 
         _updateBondingCurveParams(
             newCurrencyToken,
@@ -582,7 +582,7 @@ contract Tape is ERC1155, Ownable {
     //     return tapeBonds[tapeId].steps;
     // }
 
-    function maxTapeSupply(bytes32 tapeId) external view returns (uint128) {
+    function maxTapeSupply(bytes32 tapeId) external view returns (uint256) {
         return tapeBonds[tapeId].steps[tapeBonds[tapeId].steps.length - 1].rangeMax;
     }
 

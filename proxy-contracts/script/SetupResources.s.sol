@@ -17,13 +17,13 @@ import { IWorld } from "../src/codegen/world/IWorld.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import { ICartesiDApp } from "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
 
-contract SetDappAddress is Script {
+contract SetupResources is Script {
   function run() external {
     address dappAddress = vm.envAddress("DAPP_ADDRESS");
     address worldAddress = vm.envAddress("WORLD_ADDRESS");
     address inputBoxAddress = 0x59b22D57D4f067708AB0c00552767405926dc768;
-    address cartridgeAssetAddress = 0x581063BaaF2EfCe7087c2768A9633Ff955c1E53A;
-    address tapeAssetAddress = 0x695c1539842bF5f60ec745bF0D1f1EDEB2De2646;
+    address cartridgeAssetAddress = 0x1FB41930ec1A52B3C5467EbAe54af4091e8D0039;
+    address tapeAssetAddress = 0x137b837544b13B99d49ad8eE6a3488139F487920;
 
     // Specify a store so that you can use tables directly in PostDeploy
     StoreSwitch.setStoreAddress(worldAddress);

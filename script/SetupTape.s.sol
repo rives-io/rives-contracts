@@ -56,14 +56,14 @@ contract SECP256K1_ORDERetupTape is Script {
         // console.logAddress(msg.sender);
         // console.logAddress(tx.origin);
         // console.logAddress(tape.owner());
-        uint128[] memory ranges =  new uint128[](6); //[1,5,1000];
+        uint256[] memory ranges =  new uint256[](6); //[1,5,1000];
         ranges[0] = 1;
         ranges[1] = 1340;
         ranges[2] = 2942;
         ranges[3] = 5091;
         ranges[4] = 9161;
         ranges[5] = 10000;
-        uint128[] memory coefficients = new uint128[](6);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
+        uint256[] memory coefficients = new uint256[](6);//[uint256(1000000000000000),uint256(1000000000000000),uint256(2000000000000000)];
         coefficients[0] = 1000000000000000;
         coefficients[1] = 23863899643421;
         coefficients[2] = 18753391400637;
