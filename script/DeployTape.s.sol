@@ -23,6 +23,7 @@ contract DeployTape is Script {
         // address dappAddress = vm.envAddress("DAPP_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
+        console.logString("Deploying Tape Contracts");
 
         // Currency 
         // address currencyAddress = address(0);

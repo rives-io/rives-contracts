@@ -6,7 +6,7 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { CartridgeProportionalFeeVanguard3v2 as CartridgeFeeModel } from "../src/CartridgeProportionalFeeVanguard3v2.sol";
+import { CartridgeMixedFeeVanguard4 as CartridgeFeeModel } from "../src/CartridgeMixedFeeVanguard4.sol";
 import { CartridgeModelVanguard4 as CartridgeModel} from "../src/CartridgeModelVanguard4.sol";
 import { CartridgeOwnershipModelVanguard4 as OwnershipModel } from "../src/CartridgeOwnershipModelVanguard4.sol";
 import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
@@ -21,8 +21,10 @@ contract SECP256K1_ORDERetupCartridge is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address dappAddress = vm.envAddress("DAPP_ADDRESS");
         address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+        address worldAddress = vm.envAddress("WORLD_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
+        console.logString("Setup Cartridge Contracts");
 
         // Currency 
         // address currencyAddress = address(0);
@@ -77,7 +79,7 @@ contract SECP256K1_ORDERetupCartridge is Script {
 
         if (!cartridge.dappAddresses(dappAddress)) {
             console.logString("Adding dapp address");
-            cartridge.addDapp(dappAddress);
+            cartridge.setDapp(dappAddress,true);
         }
 
         console.logString("Setting uri");
@@ -88,6 +90,14 @@ contract SECP256K1_ORDERetupCartridge is Script {
             console.logAddress(OwnershipModel(ownershipModelAddress).owner());
             console.logAddress(operatorAddress);
             OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
+        }
+
+        // only on vanguard 4
+        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
+            console.logString("Setting the worldAddress of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
+            console.logAddress(worldAddress);
+            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
         }
 
         if (cartridge.owner() != operatorAddress && cartridge.owner() == tx.origin) {

@@ -21,8 +21,10 @@ contract SECP256K1_ORDERetupTape is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address dappAddress = vm.envAddress("DAPP_ADDRESS");
         address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+        address worldAddress = vm.envAddress("WORLD_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
+        console.logString("Setup Tape Contracts");
 
         // Currency 
         // address currencyAddress = address(0);
@@ -84,7 +86,7 @@ contract SECP256K1_ORDERetupTape is Script {
 
         if (!tape.dappAddresses(dappAddress)) {
             console.logString("Adding dapp address");
-            tape.addDapp(dappAddress);
+            tape.setDapp(dappAddress,true);
         }
 
         console.logString("Setting uri");
@@ -95,6 +97,14 @@ contract SECP256K1_ORDERetupTape is Script {
             console.logAddress(OwnershipModel(ownershipModelAddress).owner());
             console.logAddress(operatorAddress);
             OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
+        }
+
+        // only on vanguard 4
+        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
+            console.logString("Setting the worldAddress of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
+            console.logAddress(worldAddress);
+            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
         }
 
         if (tape.owner() != operatorAddress && tape.owner() == tx.origin) {

@@ -25,6 +25,7 @@ contract Cartridge is ERC1155, Ownable {
     error Cartridge__SlippageLimitExceeded();
     error Cartridge__InsufficientFunds();
     error Cartridge__ChangeError();
+    error Cartridge__InvalidParams();
 
     struct UserAccount {
         address max;
@@ -35,7 +36,7 @@ contract Cartridge is ERC1155, Ownable {
     uint256 private immutable MAX_STEPS;
 
     // base URI
-    // string private _baseURI = "";
+    string private _baseURI = "";
 
     // Default parameters
     IBondingCurveModel.BondingCurveStep[] public bondingCurveSteps;
@@ -140,8 +141,10 @@ contract Cartridge is ERC1155, Ownable {
                 }));
             }
             cartridgeBondsCreated.push(id);
-            if (creatorAllocation && newCartridgeBond.bond.steps[0].coefficient == 0) { // reserved for self
-                buyCartridges(id,newCartridgeBond.bond.steps[0].rangeMax,0);
+            if (creatorAllocation) { // reserved for self
+                if (newCartridgeBond.bond.steps.length < 2 || newCartridgeBond.bond.steps[0].coefficient != 0) 
+                    revert Cartridge__InvalidParams();
+                _buyCartridgesInternal(id,newCartridgeBond.bond.steps[0].rangeMax,0,creatorAllocation);
             }
         }
     }
@@ -221,10 +224,10 @@ contract Cartridge is ERC1155, Ownable {
         protocolWallet = newProtocolWallet;
     }
 
-    function addDapp(address dapp) external onlyOwner {
+    function setDapp(address dapp,bool active) external onlyOwner {
         if (dappAddresses[dapp]) revert Cartridge__InvalidDapp();
         
-        dappAddresses[dapp] = true;
+        dappAddresses[dapp] = active;
     }
 
     function updateBondingCurveParams(
@@ -301,10 +304,14 @@ contract Cartridge is ERC1155, Ownable {
 
     // mint/buy and burn/sell main functions
     function buyCartridges(bytes32 cartridgeId, uint256 cartridgesToMint, uint256 maxCurrencyPrice) public _checkCartridgeBond(cartridgeId) payable returns (uint256 currencyCost) {
+        return _buyCartridgesInternal(cartridgeId, cartridgesToMint, maxCurrencyPrice, false);
+    }
+
+    function _buyCartridgesInternal(bytes32 cartridgeId, uint256 cartridgesToMint, uint256 maxCurrencyPrice, bool creatorAllocation) private _checkCartridgeBond(cartridgeId) returns (uint256 currencyCost) {
         // buy from bonding curve
         
         // if (receiver == address(0)) revert Cartridge__InvalidReceiver();
-        address user = _msgSender();
+        address payable user = payable(_msgSender());
 
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
 
@@ -313,7 +320,7 @@ contract Cartridge is ERC1155, Ownable {
         // fees
         uint256 protocolFee;
         uint256 cartridgeOwnerFee;
-        if (bond.bond.steps[0].coefficient != 0) { // reserved for self
+        if (!creatorAllocation || currencyAmount != 0 || bond.bond.steps[0].coefficient != 0) { // reserved for self
             (protocolFee,cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getMintFees(bond.feeConfig, cartridgesToMint, currencyAmount);
         }
 
@@ -322,13 +329,17 @@ contract Cartridge is ERC1155, Ownable {
         if (totalPrice > maxCurrencyPrice) revert Cartridge__SlippageLimitExceeded();
 
         // Transfer currency from the user
-        if (bond.bond.currencyToken != address(0))
-            ERC20(bond.bond.currencyToken).transferFrom(user, address(this), totalPrice);
-        else {
-            if (msg.value < totalPrice) revert Cartridge__InsufficientFunds();
-            else if (msg.value > totalPrice) {
-                (bool sent, ) = user.call{value: msg.value - totalPrice}("");
-                if (!sent) revert Cartridge__ChangeError();
+        if (bond.bond.currencyToken != address(0)) {
+            if (!ERC20(bond.bond.currencyToken).transferFrom(user, address(this), totalPrice))
+                revert Cartridge__ChangeError();
+        } else {
+            if (msg.value < totalPrice) {
+                revert Cartridge__InsufficientFunds();
+            } else {
+                if (msg.value > totalPrice) {
+                    (bool sent, ) = user.call{value: msg.value - totalPrice}("");
+                    if (!sent) revert Cartridge__ChangeError();
+                }
             }
         }
         
@@ -357,7 +368,7 @@ contract Cartridge is ERC1155, Ownable {
     function sellCartridges(bytes32 cartridgeId, uint256 cartridgesToBurn, uint256 minCurrencyRefund) external _checkCartridgeBond(cartridgeId) returns (uint256) {
 
         // if (receiver == address(0)) revert Cartridge__InvalidReceiver();
-        address user = _msgSender();
+        address payable user = payable(_msgSender());
 
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
 
@@ -365,6 +376,8 @@ contract Cartridge is ERC1155, Ownable {
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee) = ICartridgeFeeModel(bond.feeModel).getBurnFees(bond.feeConfig, cartridgesToBurn, currencyAmount);
+
+        if (protocolFee + cartridgeOwnerFee > currencyAmount) revert Cartridge__InsufficientFunds();
 
         uint256 totalRefund = currencyAmount - (protocolFee + cartridgeOwnerFee);
 
@@ -389,8 +402,10 @@ contract Cartridge is ERC1155, Ownable {
 
         // Transfer currency from the user
         if (bond.bond.currencyToken != address(0)) {
-            ERC20(bond.bond.currencyToken).approve(address(this), totalRefund);
-            ERC20(bond.bond.currencyToken).transferFrom(address(this), user, totalRefund);
+            if (!ERC20(bond.bond.currencyToken).approve(address(this), totalRefund))
+                revert Cartridge__ChangeError();
+            if (!ERC20(bond.bond.currencyToken).transferFrom(address(this), user, totalRefund))
+                revert Cartridge__ChangeError();
         } else {
             (bool sent, ) = user.call{value: totalRefund}("");
             if (!sent) revert Cartridge__ChangeError();
@@ -575,13 +590,15 @@ contract Cartridge is ERC1155, Ownable {
     // withdraw
 
     function withdrawBalance(address token, uint256 amount) external {
-        address user = _msgSender();
+        address payable user = payable(_msgSender());
         if (accounts[user][token] < amount) revert BondUtils.Bond__InvalidAmount();
         accounts[user][token] -= amount;
 
         if (token != address(0)) {
-            ERC20(token).approve(address(this), amount);
-            ERC20(token).transferFrom(address(this), user, amount);
+            if (!ERC20(token).approve(address(this), amount))
+                revert Cartridge__ChangeError();
+            if (!ERC20(token).transferFrom(address(this), user, amount))
+                revert Cartridge__ChangeError();
         } else {
             (bool sent, ) = user.call{value: amount}("");
             if (!sent) revert Cartridge__ChangeError();
@@ -680,12 +697,12 @@ contract Cartridge is ERC1155, Ownable {
         return ICartridgeModel(cartridgeBonds[cartridgeId].cartridgeModel).decodeCartridgeMetadata(cartridgeBonds[cartridgeId].eventData);
     }
 
-    // function uri(uint256 tokenId) public view override returns (string memory) {
-    //     return uri(bytes32(tokenId));
-    // }
+    function uri(uint256 tokenId) public view override returns (string memory) {
+        return uri(bytes32(tokenId));
+    }
 
-    // function uri(bytes32 tokenId) public view returns (string memory) {
-    //     return string.concat(_baseURI, CartridgeBondUtils(cartridgeBondUtilsAddress).toHex(abi.encodePacked(tokenId)));
-    // }
+    function uri(bytes32 tokenId) public view returns (string memory) {
+        return string.concat(_baseURI, CartridgeBondUtils(cartridgeBondUtilsAddress).toHex(abi.encodePacked(tokenId)));
+    }
 
 }

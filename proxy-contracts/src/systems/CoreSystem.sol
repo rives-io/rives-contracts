@@ -20,6 +20,10 @@ interface WorldWithFuncs {
   function setNamespaceSystem(address, ResourceId) external;
 }
 
+interface RivesAsset {
+  function setTapeParams(bytes32) external;
+}
+
 contract CoreSystem is System {
   error CoreSystem__NoCartridgeBalance(bytes32);
   error CoreSystem__NoTapeBalance(bytes32);
@@ -63,13 +67,13 @@ contract CoreSystem is System {
     // ResourceId coreDappSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "DappSystem");
 
     uint32 c = DebugCounter.get();
-    DappMessagesDebug.set(c++, "tx.origin", abi.encode(tx.origin));
-    DappMessagesDebug.set(c++, "_msgSender()", abi.encode(_msgSender()));
+    // DappMessagesDebug.set(c++, "tx.origin", abi.encode(tx.origin));
+    // DappMessagesDebug.set(c++, "_msgSender()", abi.encode(_msgSender()));
 
     // Insert cartridge
     if (insertCartridgeSelector == bytes4(payload[:4])) {
       bytes32 payloadHash = keccak256(abi.decode(payload[4:],(bytes)));
-      DappMessagesDebug.set(c++, "insert payloadHash", abi.encode(payloadHash));
+      // DappMessagesDebug.set(c++, "insert payloadHash", abi.encode(payloadHash));
       bytes32 cartridgeId = this.getCartridgeIdFromHash(abi.encodePacked(payloadHash));
       DappMessagesDebug.set(c++, "insert cartridgeId", abi.encode(cartridgeId));
       CartridgeCreator.set(cartridgeId, tx.origin);
@@ -82,15 +86,17 @@ contract CoreSystem is System {
       if (ERC1155(CatridgeAssetAddress.get()).balanceOf(tx.origin,uint(cartridgeId)) < 1) 
         revert CoreSystem__NoCartridgeBalance(cartridgeId);
       (,,bytes memory tape,,bytes32[] memory tapesUsed,) = abi.decode(payload[4:],(bytes32,bytes32,bytes,int,bytes32[],bytes));
+      address tapeAddr = TapeAssetAddress.get();
       for (uint256 i; i < tapesUsed.length; ++i) {
-        if (ERC1155(TapeAssetAddress.get()).balanceOf(tx.origin,uint(tapesUsed[i])) < 1) 
+        if (ERC1155(tapeAddr).balanceOf(tx.origin,uint(tapesUsed[i])) < 1) 
           revert CoreSystem__NoTapeBalance(tapesUsed[i]);
       }
       bytes32 payloadHash = keccak256(tape);
-      DappMessagesDebug.set(c++, "verify payloadHash", abi.encode(payloadHash));
+      // DappMessagesDebug.set(c++, "verify payloadHash", abi.encode(payloadHash));
       bytes32 tapeId = this.getTapeIdFromRuleAndHash(abi.encodePacked(payload[4:36]), abi.encodePacked(payloadHash));
       DappMessagesDebug.set(c++, "verify tapeId", abi.encode(tapeId));
       TapeCreator.set(tapeId, tx.origin);
+      RivesAsset(tapeAddr).setTapeParams(tapeId);
     }
  
     DebugCounter.set(c);

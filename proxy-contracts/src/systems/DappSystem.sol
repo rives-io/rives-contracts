@@ -71,9 +71,9 @@ contract DappSystem is System {
     if (dapp == address(0)) revert DappSystem__InvalidResource();
     
     // debug to see event
-    uint32 c = DebugCounter.get();
-    DappMessagesDebug.set(c++, "addInputToCartesiInputBox", abi.encode(dapp,_payload));
-    DebugCounter.set(c);
+    // uint32 c = DebugCounter.get();
+    // DappMessagesDebug.set(c++, "addInputToCartesiInputBox", abi.encode(dapp,_payload));
+    // DebugCounter.set(c);
 
     // return 0x0;
     return IWorld(_world()).core__proxyAddInput(dapp, _payload);
@@ -100,8 +100,8 @@ contract DappSystem is System {
     // check dapp is dapp (checking only get template hash)
     (bool success, bytes memory data) = _dapp.staticcall(abi.encodeWithSignature("getTemplateHash()"));
     if (!success || data.length != 32) revert DappSystem__InvalidDapp();
-    // comment for nonodo /devnet
-    // if (ICartesiDApp(_dapp).getTemplateHash() != bytes32(0)) revert DappSystem__InvalidDapp();
+    // comment for nonodo/devnet
+    if (ICartesiDApp(_dapp).getTemplateHash() != bytes32(0)) revert DappSystem__InvalidDapp();
 
     // DebugCounter.set(c);
     DappAddressNamespace.set(_dapp, ResourceId.unwrap(systemResource));

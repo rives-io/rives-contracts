@@ -111,7 +111,9 @@ contract BondUtils {
 
         uint256 currentSupply = bond.currentSupply + bond.count.consumed;
 
-        if (currentSupply + tokensToMint > bond.steps[bond.steps.length - 1].rangeMax) revert Bond__ExceedSupply();
+        if (0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff - tokensToMint < currentSupply || 
+                currentSupply + tokensToMint > bond.steps[bond.steps.length - 1].rangeMax)
+            revert Bond__ExceedSupply();
 
         uint256 tokensLeft = tokensToMint;
         uint256 currencyAmountToBond;
@@ -170,12 +172,14 @@ contract BondUtils {
             uint256 tokensToProcess = tokensLeft < supplyLeft ? tokensLeft : supplyLeft;
             // reserveFromBond += ((tokensToProcess * steps[i].price) / multiFactor);
 
-            uint256 initialPrice = priceAfter;
-            priceAfter = priceAfter - step.coefficient * (tokensToProcess - 1);
-            currencyAmountFromBond += Math.ceilDiv((tokensToProcess) * (initialPrice + priceAfter), 2);
+            if (tokensToProcess > 0) {
+                uint256 initialPrice = priceAfter;
+                priceAfter = priceAfter - step.coefficient * (tokensToProcess - 1);
+                currencyAmountFromBond += Math.ceilDiv((tokensToProcess) * (initialPrice + priceAfter), 2);
 
-            tokensLeft -= tokensToProcess;
-            currentSupply -= tokensToProcess;
+                tokensLeft -= tokensToProcess;
+                currentSupply -= tokensToProcess;
+            }
 
             if (i == 0 && tokensToProcess == supplyLeft) priceAfter = 0;
             else priceAfter -= step.coefficient;
@@ -197,7 +201,8 @@ contract BondUtils {
 
         uint256 currentConsumed = bond.count.consumed;
 
-        if (tokensToConsume > bond.currentSupply) revert Bond__ExceedSupply();
+        if (0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff - tokensToConsume < currentConsumed  ||
+            tokensToConsume + currentConsumed > bond.currentSupply) revert Bond__ExceedSupply();
 
         uint256 tokensLeft = tokensToConsume;
         uint256 currencyAmountToBond;
@@ -233,15 +238,15 @@ contract BondUtils {
         currencyAmount = currencyAmountToBond;
     }
     
-    // function toHex(bytes memory buffer) public pure returns (string memory) {
-    //     bytes memory converted = new bytes(buffer.length * 2);
-    //     bytes memory _base = "0123456789abcdef";
+    function toHex(bytes memory buffer) public pure returns (string memory) {
+        bytes memory converted = new bytes(buffer.length * 2);
+        bytes memory _base = "0123456789abcdef";
 
-    //     for (uint256 i = 0; i < buffer.length; i++) {
-    //         converted[i * 2] = _base[uint8(buffer[i]) / _base.length];
-    //         converted[i * 2 + 1] = _base[uint8(buffer[i]) % _base.length];
-    //     }
+        for (uint256 i = 0; i < buffer.length; i++) {
+            converted[i * 2] = _base[uint8(buffer[i]) / _base.length];
+            converted[i * 2 + 1] = _base[uint8(buffer[i]) % _base.length];
+        }
 
-    //     return string(converted);
-    // }
+        return string(converted);
+    }
 }

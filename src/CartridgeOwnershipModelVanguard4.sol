@@ -10,13 +10,13 @@ interface WorldWithFuncs {
 
 contract CartridgeOwnershipModelVanguard4 is IOwnershipModel,Ownable {
 
-    address public worldAddress = address(0x00124590193FCD497c0eeD517103368113F89258);
+    address public worldAddress;
 
     constructor() Ownable(tx.origin) {}
 
     function checkOwner(address addr,bytes32 cartridgeId) view external override returns (bool) {
         // get cartridge owner from proxy contracts
-        return addr == owner() || addr == WorldWithFuncs(worldAddress).getCartridgeCreator(cartridgeId);
+        return addr == owner() || (worldAddress != address(0) && addr == WorldWithFuncs(worldAddress).getCartridgeCreator(cartridgeId));
     }
 
     function setWorldAddress(address addr) external onlyOwner {

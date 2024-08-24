@@ -22,8 +22,8 @@ contract SetupResources is Script {
     address dappAddress = vm.envAddress("DAPP_ADDRESS");
     address worldAddress = vm.envAddress("WORLD_ADDRESS");
     address inputBoxAddress = 0x59b22D57D4f067708AB0c00552767405926dc768;
-    address cartridgeAssetAddress = 0x1FB41930ec1A52B3C5467EbAe54af4091e8D0039;
-    address tapeAssetAddress = 0x137b837544b13B99d49ad8eE6a3488139F487920;
+    address cartridgeAssetAddress = 0xd03f995fc31b04c56e7C37C0Dd14E642A7130976;
+    address tapeAssetAddress = 0x4761DD6dE0fc5b971403AE89c09f9f466326dEec;
 
     // Specify a store so that you can use tables directly in PostDeploy
     StoreSwitch.setStoreAddress(worldAddress);

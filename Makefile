@@ -5,7 +5,7 @@ DEPLOYFILE := .deploy
 
 SHELL := /bin/bash
 
-WORLD_ADDRESS := 0x00124590193fcd497c0eed517103368113f89258
+WORLD_ADDRESS ?= 0x00124590193fcd497c0eed517103368113f89258
 
 all: build build-proxy install-proxy-client
 

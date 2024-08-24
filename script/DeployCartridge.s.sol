@@ -6,7 +6,7 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { CartridgeProportionalFeeVanguard3v2 as CartridgeFeeModel } from "../src/CartridgeProportionalFeeVanguard3v2.sol";
+import { CartridgeMixedFeeVanguard4 as CartridgeFeeModel } from "../src/CartridgeMixedFeeVanguard4.sol";
 import { CartridgeModelVanguard4 as CartridgeModel} from "../src/CartridgeModelVanguard4.sol";
 import { CartridgeOwnershipModelVanguard4 as OwnershipModel } from "../src/CartridgeOwnershipModelVanguard4.sol";
 import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
@@ -23,6 +23,7 @@ contract DeployCartridge is Script {
         // address dappAddress = vm.envAddress("DAPP_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
+        console.logString("Deploying Cartridge Contracts");
 
         // Currency 
         // address currencyAddress = address(0);
