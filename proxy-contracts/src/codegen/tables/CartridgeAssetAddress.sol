@@ -16,9 +16,9 @@ import { Schema } from "@latticexyz/store/src/Schema.sol";
 import { EncodedLengths, EncodedLengthsLib } from "@latticexyz/store/src/EncodedLengths.sol";
 import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 
-library CatridgeAssetAddress {
-  // Hex below is the result of `WorldResourceIdLib.encode({ namespace: "core", name: "CatridgeAssetAdd", typeId: RESOURCE_TABLE });`
-  ResourceId constant _tableId = ResourceId.wrap(0x7462636f72650000000000000000000043617472696467654173736574416464);
+library CartridgeAssetAddress {
+  // Hex below is the result of `WorldResourceIdLib.encode({ namespace: "core", name: "CartridgeAssetAd", typeId: RESOURCE_TABLE });`
+  ResourceId constant _tableId = ResourceId.wrap(0x7462636f72650000000000000000000043617274726964676541737365744164);
 
   FieldLayout constant _fieldLayout =
     FieldLayout.wrap(0x0014010014000000000000000000000000000000000000000000000000000000);

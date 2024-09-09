@@ -61,6 +61,7 @@ contract Tape is ERC1155, Ownable {
 
     // Constructor
     constructor(
+        address ownerAddress,
         address newTapeBondUtilsAddress,
         uint256 maxSteps
         // address newProtocolWallet,
@@ -74,8 +75,8 @@ contract Tape is ERC1155, Ownable {
         // uint256 newMaxSupply,
         // uint256[] memory stepRangesMax, 
         // uint256[] memory stepCoefficients
-    ) Ownable(tx.origin) ERC1155("") {
-        protocolWallet = tx.origin;
+    ) Ownable(ownerAddress) ERC1155("") {
+        protocolWallet = ownerAddress;
 
         MAX_STEPS = maxSteps;
         
@@ -105,7 +106,7 @@ contract Tape is ERC1155, Ownable {
     }
 
     modifier _checkTapeOwner(bytes32 id) {
-        if(!IOwnershipModel(tapeOwnershipModelAddress).checkOwner(tx.origin,id)) revert Tape__InvalidOwner();
+        if(!IOwnershipModel(tapeOwnershipModelAddress).checkOwner(_msgSender(),id)) revert Tape__InvalidOwner();
         _;
     }
 
@@ -125,7 +126,7 @@ contract Tape is ERC1155, Ownable {
     //     }
     // }
 
-    function _createTapeBond(bytes32 id, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation) internal {
+    function _createTapeBond(bytes32 id, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation,address creator) internal {
         if(tapeBonds[id].bond.steps.length == 0) {
             TapeBondUtils.TapeBond storage newTapeBond = tapeBonds[id];
             newTapeBond.feeModel = feeModelAddress;
@@ -141,7 +142,7 @@ contract Tape is ERC1155, Ownable {
             if (creatorAllocation) { // reserved for self
                 if (newTapeBond.bond.steps.length < 2 || newTapeBond.bond.steps[0].coefficient != 0) 
                     revert Tape__InvalidParams();
-                _buyTapesInternal(id,newTapeBond.bond.steps[0].rangeMax,0,creatorAllocation);
+                _buyTapesInternal(creator,id,newTapeBond.bond.steps[0].rangeMax,0,creatorAllocation);
             }
         }
     }
@@ -366,15 +367,15 @@ contract Tape is ERC1155, Ownable {
     }
 
     function buyTapes(bytes32 tapeId, uint256 tapesToMint, uint256 maxCurrencyPrice) public _checkTapeBond(tapeId) payable returns (uint256 currencyCost) {
-        return _buyTapesInternal(tapeId, tapesToMint, maxCurrencyPrice, false);
+        return _buyTapesInternal(_msgSender(),tapeId, tapesToMint, maxCurrencyPrice, false);
     }
 
     // mint/buy and burn/sell main functions
-    function _buyTapesInternal(bytes32 tapeId, uint256 tapesToMint, uint256 maxCurrencyPrice, bool creatorAllocation) private _checkTapeBond(tapeId) returns (uint256 currencyCost) {
+    function _buyTapesInternal(address sender, bytes32 tapeId, uint256 tapesToMint, uint256 maxCurrencyPrice, bool creatorAllocation) private _checkTapeBond(tapeId) returns (uint256 currencyCost) {
         // buy from bonding curve
         
         // if (receiver == address(0)) revert Tape__InvalidReceiver();
-        address payable user = payable(_msgSender());
+        address payable user = payable(sender);
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
@@ -527,15 +528,16 @@ contract Tape is ERC1155, Ownable {
         bytes32 tapeId,
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
-        bool creatorAllocation) public _checkTapeOwner(tapeId) {
+        bool creatorAllocation,
+        address creator) public _checkTapeOwner(tapeId) {
 
         IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(tapeBondingCurveModelAddress).validateBondingCurve(tapeId,stepRangesMax,stepCoefficients,maxSupply);
 
-        _createTapeBond(tapeId,steps,creatorAllocation);
+        _createTapeBond(tapeId,steps,creatorAllocation,creator);
     }
 
     function setTapeParams(bytes32 tapeId) public _checkTapeOwner(tapeId) {
-        _createTapeBond(tapeId,bondingCurveSteps,false);
+        _createTapeBond(tapeId,bondingCurveSteps,false,address(0));
     }
 
     function validateTapeCustom(
@@ -545,9 +547,10 @@ contract Tape is ERC1155, Ownable {
         Proof calldata _v,
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
-        bool creatorAllocation) external returns (bytes32) {
+        bool creatorAllocation,
+        address creator) external returns (bytes32) {
 
-        setTapeParamsCustom(tapeId,stepRangesMax,stepCoefficients,creatorAllocation);
+        setTapeParamsCustom(tapeId,stepRangesMax,stepCoefficients,creatorAllocation,creator);
 
         return _validateTape(dapp,tapeId,_payload,_v);
     }

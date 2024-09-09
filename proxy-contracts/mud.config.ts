@@ -43,13 +43,13 @@ export default defineWorld({
     //   },
     //   key: ["namespace"],
     // },
-    CatridgeAssetAddress: {
+    CartridgeAssetAddress: {
       schema: {
         value: "address",
       },
       key: [],
     },
-    CartridgeCreator: {
+    CartridgeOwner: {
       schema: {
         cartridgeId: "bytes32", 
         owner: "address",
@@ -69,6 +69,28 @@ export default defineWorld({
       },
       key: ["tapeId"],
     },
+    RegisteredModel: {
+      schema: {
+        modelAddress: "address", 
+        active: "bool",
+      },
+      key: ["modelAddress"],
+    },
+    CartridgeInsertionModel: {
+      schema: {
+        modelAddress: "address",
+        config: "bytes"
+      },
+      key: [],
+    },
+    TapeSubmissionModel: {
+      schema: {
+        cartridgeId: "bytes32", 
+        modelAddress: "address",
+        config: "bytes"
+      },
+      key: ["cartridgeId"],
+    },
     DappMessagesDebug: {
       schema: { 
         index: "uint32", 
@@ -82,6 +104,23 @@ export default defineWorld({
         value: "uint32",
       },
       key: [],
+    },
+  },
+  systems: {
+    AdminSystem: {
+      openAccess: false,
+    },
+    InputSystem: {
+      openAccess: false,
+      deploy:{
+        registerWorldFunctions:false
+      }
+    },
+    InputBoxSystem: {
+      openAccess: false,
+      deploy:{
+        registerWorldFunctions:false
+      }
     },
   },
 });

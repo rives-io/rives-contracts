@@ -63,6 +63,7 @@ contract Cartridge is ERC1155, Ownable {
 
     // Constructor
     constructor(
+        address ownerAddress,
         address newCartridgeBondUtilsAddress,
         uint256 maxSteps
         // address newProtocolWallet,
@@ -76,8 +77,8 @@ contract Cartridge is ERC1155, Ownable {
         // uint256 newMaxSupply,
         // uint256[] memory stepRangesMax, 
         // uint256[] memory stepCoefficients
-    ) Ownable(tx.origin) ERC1155("") {
-        protocolWallet = tx.origin;
+    ) Ownable(ownerAddress) ERC1155("") {
+        protocolWallet = ownerAddress;
 
         MAX_STEPS = maxSteps;
         
@@ -107,7 +108,7 @@ contract Cartridge is ERC1155, Ownable {
     }
 
     modifier _checkCartridgeOwner(bytes32 id) {
-        if(!IOwnershipModel(cartridgeOwnershipModelAddress).checkOwner(msg.sender,id)) revert Cartridge__InvalidOwner();
+        if(!IOwnershipModel(cartridgeOwnershipModelAddress).checkOwner(_msgSender(),id)) revert Cartridge__InvalidOwner();
         _;
     }
 
@@ -127,7 +128,7 @@ contract Cartridge is ERC1155, Ownable {
     //     }
     // }
 
-    function _createCartridgeBond(bytes32 id, uint256 bondFeeConfig, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation) internal {
+    function _createCartridgeBond(bytes32 id, uint256 bondFeeConfig, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation, address creator) internal {
         if(cartridgeBonds[id].bond.steps.length == 0) {
             CartridgeBondUtils.CartridgeBond storage newCartridgeBond = cartridgeBonds[id];
             newCartridgeBond.feeModel = feeModelAddress;
@@ -144,7 +145,7 @@ contract Cartridge is ERC1155, Ownable {
             if (creatorAllocation) { // reserved for self
                 if (newCartridgeBond.bond.steps.length < 2 || newCartridgeBond.bond.steps[0].coefficient != 0) 
                     revert Cartridge__InvalidParams();
-                _buyCartridgesInternal(id,newCartridgeBond.bond.steps[0].rangeMax,0,creatorAllocation);
+                _buyCartridgesInternal(creator,id,newCartridgeBond.bond.steps[0].rangeMax,0,creatorAllocation);
             }
         }
     }
@@ -268,12 +269,6 @@ contract Cartridge is ERC1155, Ownable {
         cartridgeBonds[cartridgeId].cartridgeModel = newCartridgeModel;
     }
 
-    // function updateCartridgeCreator(address token, address creator) external {
-        // if (bond.creator != _msgSender()) revert
-        // if (creator == address(0)) revert MCV2_Bond__InvalidCreatorAddress();
-    // function updateCartridgeCartridgeOwner(address token, address owner) external {
-
-
     // Fees functions
     function _distributeFees(
         bytes32 tapeId, 
@@ -304,14 +299,14 @@ contract Cartridge is ERC1155, Ownable {
 
     // mint/buy and burn/sell main functions
     function buyCartridges(bytes32 cartridgeId, uint256 cartridgesToMint, uint256 maxCurrencyPrice) public _checkCartridgeBond(cartridgeId) payable returns (uint256 currencyCost) {
-        return _buyCartridgesInternal(cartridgeId, cartridgesToMint, maxCurrencyPrice, false);
+        return _buyCartridgesInternal(_msgSender(), cartridgeId, cartridgesToMint, maxCurrencyPrice, false);
     }
 
-    function _buyCartridgesInternal(bytes32 cartridgeId, uint256 cartridgesToMint, uint256 maxCurrencyPrice, bool creatorAllocation) private _checkCartridgeBond(cartridgeId) returns (uint256 currencyCost) {
+    function _buyCartridgesInternal(address sender,bytes32 cartridgeId, uint256 cartridgesToMint, uint256 maxCurrencyPrice, bool creatorAllocation) private _checkCartridgeBond(cartridgeId) returns (uint256 currencyCost) {
         // buy from bonding curve
         
         // if (receiver == address(0)) revert Cartridge__InvalidReceiver();
-        address payable user = payable(_msgSender());
+        address payable user = payable(sender);
 
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
 
@@ -460,15 +455,16 @@ contract Cartridge is ERC1155, Ownable {
         uint256 bondFeeConfig,
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
-        bool creatorAllocation) public _checkCartridgeOwner(cartridgeId) {
+        bool creatorAllocation,
+        address creator) public _checkCartridgeOwner(cartridgeId) {
 
         IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(cartridgeBondingCurveModelAddress).validateBondingCurve(cartridgeId,stepRangesMax,stepCoefficients,maxSupply);
 
-        _createCartridgeBond(cartridgeId,bondFeeConfig,steps,creatorAllocation);
+        _createCartridgeBond(cartridgeId,bondFeeConfig,steps,creatorAllocation,creator);
     }
 
     function setCartridgeParams(bytes32 cartridgeId) public _checkCartridgeOwner(cartridgeId) {
-        _createCartridgeBond(cartridgeId,feeConfig,bondingCurveSteps,false);
+        _createCartridgeBond(cartridgeId,feeConfig,bondingCurveSteps,false,address(0));
     }
 
     function validateCartridgeCustom(
@@ -479,9 +475,10 @@ contract Cartridge is ERC1155, Ownable {
         uint256 bondFeeConfig,
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
-        bool creatorAllocation) external returns (bytes32) {
+        bool creatorAllocation,
+        address creator) external returns (bytes32) {
 
-        setCartridgeParamsCustom(cartridgeId,bondFeeConfig,stepRangesMax,stepCoefficients,creatorAllocation);
+        setCartridgeParamsCustom(cartridgeId,bondFeeConfig,stepRangesMax,stepCoefficients,creatorAllocation,creator);
 
         return _validateCartridge(dapp,cartridgeId,_payload,_v);
     }

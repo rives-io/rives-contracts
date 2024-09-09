@@ -4,8 +4,10 @@ pragma solidity >=0.8.24;
 import { System } from "@latticexyz/world/src/System.sol";
 import { ResourceId, ResourceIdInstance, WorldResourceIdLib, WorldResourceIdInstance } from "@latticexyz/world/src/WorldResourceId.sol";
 
-import { SystemCallData } from "@latticexyz/world/src/modules/init/types.sol";
- 
+import { WorldContextProviderLib } from "@latticexyz/world/src/WorldContext.sol";
+
+import { Systems } from "@latticexyz/world/src/codegen/index.sol";
+
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
 import { NamespaceOwner } from "@latticexyz/world/src/codegen/tables/NamespaceOwner.sol";
 
@@ -28,7 +30,7 @@ contract DappSystem is System {
   // error DappSystem__ArrayError();
   error DappSystem__InvalidPayload();
 
-  function addInput(address _dapp, bytes calldata _payload) public returns (bytes32) {
+  function addInput(address _dapp, bytes calldata _payload) public payable returns (bytes32) {
     if (_payload.length < 4) revert DappSystem__InvalidPayload();
 
     // get namespace system from db by dapp address
@@ -37,17 +39,28 @@ contract DappSystem is System {
 
     ResourceId dappSystemResourceId = ResourceId.wrap(dappResourceIdbytes);
 
+    ResourceId inputSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "InputSystem");
+
     // // DEBUG
-    // uint32 c = DebugCounter.get();
+    uint32 c = DebugCounter.get();
 
     // DappMessagesDebug.set(c++, "dappResourceIdbytes ",abi.encodePacked(dappResourceIdbytes));
     // DappMessagesDebug.set(c++, "subs size ",abi.encodePacked(subscriptions.length));
 
+    DappMessagesDebug.set(c++, "DappSystem msg.value", abi.encode(msg.value));
+    DappMessagesDebug.set(c++, "DappSystem _msgValue()", abi.encode(_msgValue()));
+    DebugCounter.set(c);
     bytes memory returnData = IWorld(_world()).call(
-      dappSystemResourceId,
-      abi.encodeWithSignature("prepareInput(bytes)", _payload));
+      inputSystem,
+      abi.encodeWithSignature("prepareInput(address,uint256,bytes)",
+        _msgSender(), _msgValue(), _payload));
 
-    ResourceId coreDappSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "DappSystem");
+    // bytes memory returnData = WorldContextProviderLib.delegatecallWithContextOrRevert(
+    //   _msgSender(),
+    //   _msgValue(),
+    //   Systems.getSystem(inputSystem),
+    //   abi.encodeWithSignature("prepareInput(bytes)", _msgSender(), _payload)
+    // );
 
     // // add msg sender bytes in between
     bytes memory _proxiedPayload = abi.encodePacked(_payload[:4],_msgSender(),_payload[4:]);
@@ -60,27 +73,19 @@ contract DappSystem is System {
     // DebugCounter.set(c);
 
     returnData = IWorld(_world()).call(
-      coreDappSystem,
+      inputSystem,
       abi.encodeWithSignature("addInputToCartesiInputBox(bytes32,bytes)", dappSystemResourceId, _proxiedPayload));
 
     return bytes32(returnData);
   }
 
-  function addInputToCartesiInputBox(bytes32 resourceId, bytes calldata _payload) public returns (bytes32) {
-    address dapp = NamespaceDappAddress.get(resourceId);
-    if (dapp == address(0)) revert DappSystem__InvalidResource();
-    
-    // debug to see event
-    // uint32 c = DebugCounter.get();
-    // DappMessagesDebug.set(c++, "addInputToCartesiInputBox", abi.encode(dapp,_payload));
-    // DebugCounter.set(c);
-
-    // return 0x0;
-    return IWorld(_world()).core__proxyAddInput(dapp, _payload);
-  }
-
-
   function setNamespaceSystem(address _dapp, ResourceId systemResource) public {
+
+    uint32 c = DebugCounter.get();
+    DappMessagesDebug.set(c++, "setNamespaceSystem tx.origin", abi.encode(tx.origin));
+    DappMessagesDebug.set(c++, "setNamespaceSystem msg.sender", abi.encode(msg.sender));
+    DappMessagesDebug.set(c++, "setNamespaceSystem _msgSender()", abi.encode(_msgSender()));
+    DebugCounter.set(c);
 
     // uint32 c = DebugCounter.get();
 
@@ -90,8 +95,8 @@ contract DappSystem is System {
     // DappMessagesDebug.set(c++, "ICartesiDApp(_dapp).getTemplateHash()", abi.encode(ICartesiDApp(_dapp).getTemplateHash()));
 
     // check namespace owner
-    // AccessControl.requireOwner(systemResource, tx.origin);
-    if (NamespaceOwner.get(systemResource.getNamespaceId()) != tx.origin) revert DappSystem__InvalidOwner();
+    AccessControl.requireOwner(systemResource, _msgSender());
+    if (NamespaceOwner.get(systemResource.getNamespaceId()) != _msgSender()) revert DappSystem__InvalidOwner();
 
     // comment for nonodo
     // check dapp owner

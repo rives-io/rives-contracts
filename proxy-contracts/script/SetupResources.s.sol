@@ -1,29 +1,45 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.24;
 
+import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
+
 import { Script } from "forge-std/Script.sol";
 import { console } from "forge-std/console.sol";
 import { StoreSwitch } from "@latticexyz/store/src/StoreSwitch.sol";
 import { RESOURCE_SYSTEM } from "@latticexyz/world/src/worldResourceTypes.sol";
 import { ROOT_NAMESPACE, RESOURCE_NAMESPACE } from "@latticexyz/world/src/constants.sol";
 import { ResourceId, WorldResourceIdLib, WorldResourceIdInstance } from "@latticexyz/world/src/WorldResourceId.sol";
-import { DappAddressNamespace, NamespaceDappAddress, InputBoxAddress, CatridgeAssetAddress, TapeAssetAddress } from "../src/codegen/index.sol";
+import {  DappAddressNamespace, NamespaceDappAddress, CartridgeInsertionModel,
+          InputBoxAddress, CartridgeAssetAddress, TapeAssetAddress } from "../src/codegen/index.sol";
 import { AccessControl } from "@latticexyz/world/src/AccessControl.sol";
-
 import { WorldRegistrationSystem } from "@latticexyz/world/src/modules/init/implementations/WorldRegistrationSystem.sol";
+
+import { ICartesiDApp } from "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
  
 import { IWorld } from "../src/codegen/world/IWorld.sol";
+import { FreeCartridgeInsertion as CartridgeInsertion } from "../src/models/FreeCartridgeInsertion.sol";
+import { FeeTapeSubmission } from "../src/models/FeeTapeSubmission.sol";
+import { FreeTapeSubmission } from "../src/models/FreeTapeSubmission.sol";
+import { OwnershipTapeSubmission } from "../src/models/OwnershipTapeSubmission.sol";
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import { ICartesiDApp } from "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
+interface TapeSubmissionWithWorld {
+  function worldAddress() view external returns (address);
+  function setWorldAddress(address) external;
+}
+
 
 contract SetupResources is Script {
+  address constant DEPLOY_FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+  bytes32 constant SALT = bytes32(0);
+
   function run() external {
     address dappAddress = vm.envAddress("DAPP_ADDRESS");
     address worldAddress = vm.envAddress("WORLD_ADDRESS");
-    address inputBoxAddress = 0x59b22D57D4f067708AB0c00552767405926dc768;
-    address cartridgeAssetAddress = 0xd03f995fc31b04c56e7C37C0Dd14E642A7130976;
-    address tapeAssetAddress = 0x4761DD6dE0fc5b971403AE89c09f9f466326dEec;
+    address inputBoxAddress = vm.envAddress("INPUT_BOX_ADDRESS");
+    address cartridgeAssetAddress = vm.envAddress("CARTRIDGE_ASSET_ADDRESS");
+    address tapeAssetAddress = vm.envAddress("TAPE_ASSET_ADDRESS");
+    address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+    bytes memory cartridgeInsertionConfig = vm.envBytes("CARTRIDGE_INSERTION_CONFIG");
 
     // Specify a store so that you can use tables directly in PostDeploy
     StoreSwitch.setStoreAddress(worldAddress);
@@ -34,6 +50,9 @@ contract SetupResources is Script {
     // Start broadcasting transactions from the deployer account
     vm.startBroadcast(deployerPrivateKey);
 
+    console.logAddress(msg.sender);
+    console.logAddress(tx.origin);
+
     console.logString("Current inputBox address is:");
     console.logAddress(InputBoxAddress.get());
     if (InputBoxAddress.get() != inputBoxAddress){
@@ -43,11 +62,11 @@ contract SetupResources is Script {
     }
     
     console.logString("Current cartridge asset address is:");
-    console.logAddress(CatridgeAssetAddress.get());
-    if (CatridgeAssetAddress.get() != cartridgeAssetAddress){
+    console.logAddress(CartridgeAssetAddress.get());
+    if (CartridgeAssetAddress.get() != cartridgeAssetAddress){
       console.logString("Didn't match, updating cartridge asset address to:");
       console.logAddress(cartridgeAssetAddress);
-      IWorld(worldAddress).core__setCatridgeAssetAddress(cartridgeAssetAddress);
+      IWorld(worldAddress).core__setCartridgeAssetAddress(cartridgeAssetAddress);
     }
     
     console.logString("Current tape asset address is:");
@@ -71,29 +90,117 @@ contract SetupResources is Script {
       IWorld(worldAddress).core__setDappAddress(dappAddress);
     }
 
+    // cartridge Insertion 
+    bytes memory cartridgeInsertionCode = abi.encodePacked(type(CartridgeInsertion).creationCode);
+    address cartridgeInsertionAddress = Create2.computeAddress(SALT, keccak256(cartridgeInsertionCode),DEPLOY_FACTORY);
+    console.logString("Expected cartridgeInsertion");
+    console.logAddress(cartridgeInsertionAddress);
+    if (checkSize(cartridgeInsertionAddress) == 0) {
+      CartridgeInsertion cartridgeInsertion = new CartridgeInsertion{salt: SALT}();
+      console.logString("Deployed cartridgeInsertion");
+      console.logAddress(address(cartridgeInsertion));
+    } else {
+      console.logString("Already deployed cartridgeInsertion");
+    }
 
-    // console.logString("tx.origin:");
-    // console.logAddress(tx.origin);
-    // console.logString("msg.sender:");
-    // console.logAddress(msg.sender);
-    // ResourceId coreNamespace = WorldResourceIdLib.encode(RESOURCE_NAMESPACE, "core");
-    // console.logString("coreNamespace:");
-    // console.logBytes32(coreNamespace);
-    // IWorld(worldAddress).transferOwnership(coreNamespace, tx.origin);
+    if (!IWorld(worldAddress).core__getRegisteredModel(cartridgeInsertionAddress)) {
+      console.logString("Model cartridgeInsertion not registered. Registering...");
+      IWorld(worldAddress).core__setRegisteredModel(cartridgeInsertionAddress,true);
+    } else {
+      console.logString("Model cartridgeInsertion already registered");
+    }
+    
+    // tape submission 
+    bytes memory tapeSubmissionCode = abi.encodePacked(type(FreeTapeSubmission).creationCode);
+    address tapeSubmissionAddress = Create2.computeAddress(SALT, keccak256(tapeSubmissionCode),DEPLOY_FACTORY);
+    console.logString("Expected Free tapeSubmission");
+    console.logAddress(tapeSubmissionAddress);
+    if (checkSize(tapeSubmissionAddress) == 0) {
+      FreeTapeSubmission tapeSubmission = new FreeTapeSubmission{salt: SALT}();
+      console.logString("Deployed Free tapeSubmission");
+      console.logAddress(address(tapeSubmission));
+    } else {
+      console.logString("Already deployed Free tapeSubmission");
+    }
+    
+    if (!IWorld(worldAddress).core__getRegisteredModel(tapeSubmissionAddress)) {
+      console.logString("Model Free tapeSubmission not registered. Registering...");
+      IWorld(worldAddress).core__setRegisteredModel(tapeSubmissionAddress,true);
+    } else {
+      console.logString("Model Free tapeSubmission already registered");
+    }
 
-    // console.logString("Owner:");
-    // // console.logAddress(CartesiDApp(dappAddress).owner());
-    // (bool success, bytes memory data) = dappAddress.staticcall(abi.encodeWithSignature("owner()"));
-    // console.logBool(success);
-    // console.logBytes(data);
-    // console.logString("hash:");
-    // (success, data) = dappAddress.staticcall(abi.encodeWithSignature("getTemplateHash()"));
-    // console.logBool(success);
-    // console.logBytes(data);
-    // console.logBytes32(ICartesiDApp(dappAddress).getTemplateHash());
+    tapeSubmissionCode = abi.encodePacked(type(OwnershipTapeSubmission).creationCode,abi.encode(operatorAddress));
+    tapeSubmissionAddress = Create2.computeAddress(SALT, keccak256(tapeSubmissionCode),DEPLOY_FACTORY);
+    console.logString("Expected Ownership tapeSubmission");
+    console.logAddress(tapeSubmissionAddress);
+    if (checkSize(tapeSubmissionAddress) == 0) {
+      OwnershipTapeSubmission tapeSubmission = new OwnershipTapeSubmission{salt: SALT}(operatorAddress);
+      console.logString("Deployed Ownership tapeSubmission");
+      console.logAddress(address(tapeSubmission));
+    } else {
+      console.logString("Already deployed Ownership tapeSubmission");
+    }
+    
+    if (TapeSubmissionWithWorld(tapeSubmissionAddress).worldAddress() != worldAddress) {
+      console.logString("Setting the worldAddress of Ownership tapeSubmission from - to");
+      console.logAddress(TapeSubmissionWithWorld(tapeSubmissionAddress).worldAddress());
+      console.logAddress(worldAddress);
+      TapeSubmissionWithWorld(tapeSubmissionAddress).setWorldAddress(worldAddress);
+    }
+
+    if (!IWorld(worldAddress).core__getRegisteredModel(tapeSubmissionAddress)) {
+      console.logString("Model Ownership tapeSubmission not registered. Registering...");
+      IWorld(worldAddress).core__setRegisteredModel(tapeSubmissionAddress,true);
+    } else {
+      console.logString("Model Ownership tapeSubmission already registered");
+    }
+
+
+    tapeSubmissionCode = abi.encodePacked(type(FeeTapeSubmission).creationCode,abi.encode(operatorAddress));
+    tapeSubmissionAddress = Create2.computeAddress(SALT, keccak256(tapeSubmissionCode),DEPLOY_FACTORY);
+    console.logString("Expected Fee tapeSubmission");
+    console.logAddress(tapeSubmissionAddress);
+    if (checkSize(tapeSubmissionAddress) == 0) {
+      FeeTapeSubmission tapeSubmission = new FeeTapeSubmission{salt: SALT}(operatorAddress);
+      console.logString("Deployed Fee tapeSubmission");
+      console.logAddress(address(tapeSubmission));
+    } else {
+      console.logString("Already deployed Fee tapeSubmission");
+    }
+    
+    if (TapeSubmissionWithWorld(tapeSubmissionAddress).worldAddress() != worldAddress) {
+      console.logString("Setting the worldAddress of Fee tapeSubmission from - to");
+      console.logAddress(TapeSubmissionWithWorld(tapeSubmissionAddress).worldAddress());
+      console.logAddress(worldAddress);
+      TapeSubmissionWithWorld(tapeSubmissionAddress).setWorldAddress(worldAddress);
+    }
+    if (!IWorld(worldAddress).core__getRegisteredModel(tapeSubmissionAddress)) {
+      console.logString("Model Fee tapeSubmission not registered. Registering...");
+      IWorld(worldAddress).core__setRegisteredModel(tapeSubmissionAddress,true);
+    } else {
+      console.logString("Model Fee tapeSubmission already registered");
+    }
+
+    // setup cartridge insertion model
+    console.logString("Current Cartridge Insertion Model is:");
+    console.logAddress(CartridgeInsertionModel.getModelAddress());
+    if (CartridgeInsertionModel.getModelAddress() != cartridgeInsertionAddress ||
+        keccak256(CartridgeInsertionModel.getConfig()) != keccak256(cartridgeInsertionConfig)){
+      console.logString("Didn't match, updating Cartridge Insertion Model to:");
+      console.logAddress(cartridgeInsertionAddress);
+      IWorld(worldAddress).core__setCartridgeInsertionModel(cartridgeInsertionAddress,cartridgeInsertionConfig);
+    }
 
     console.logString("Done");
 
     vm.stopBroadcast();
   }
+
+  function checkSize(address addr) public view returns(uint extSize) {
+      assembly {
+          extSize := extcodesize(addr) // returns 0 if EOA, >0 if smart contract
+      }
+  }
+    
 }

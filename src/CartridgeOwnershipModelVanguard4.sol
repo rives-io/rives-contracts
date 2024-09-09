@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IOwnershipModel.sol";
 
 interface WorldWithFuncs {
-  function getCartridgeCreator(bytes32) view external returns (address);
+  function getCartridgeOwner(bytes32) view external returns (address);
 }
 
 contract CartridgeOwnershipModelVanguard4 is IOwnershipModel,Ownable {
@@ -16,7 +16,7 @@ contract CartridgeOwnershipModelVanguard4 is IOwnershipModel,Ownable {
 
     function checkOwner(address addr,bytes32 cartridgeId) view external override returns (bool) {
         // get cartridge owner from proxy contracts
-        return addr == owner() || (worldAddress != address(0) && addr == WorldWithFuncs(worldAddress).getCartridgeCreator(cartridgeId));
+        return addr == owner() || (worldAddress != address(0) && addr == WorldWithFuncs(worldAddress).getCartridgeOwner(cartridgeId));
     }
 
     function setWorldAddress(address addr) external onlyOwner {

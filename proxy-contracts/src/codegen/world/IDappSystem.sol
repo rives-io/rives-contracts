@@ -16,9 +16,7 @@ interface IDappSystem {
   error DappSystem__InvalidDapp();
   error DappSystem__InvalidPayload();
 
-  function core__addInput(address _dapp, bytes calldata _payload) external returns (bytes32);
-
-  function core__addInputToCartesiInputBox(bytes32 resourceId, bytes calldata _payload) external returns (bytes32);
+  function core__addInput(address _dapp, bytes calldata _payload) external payable returns (bytes32);
 
   function core__setNamespaceSystem(address _dapp, ResourceId systemResource) external;
 }
