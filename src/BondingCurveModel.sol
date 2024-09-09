@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./IBondingCurveModel.sol";
 
-contract BondingCurveModelVanguard3 is IBondingCurveModel {
+contract BondingCurveModel is IBondingCurveModel {
     function validateBondingCurve(
         bytes32, // id
         uint256[] memory stepRangesMax, 

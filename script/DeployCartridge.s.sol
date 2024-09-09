@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { CartridgeMixedFeeVanguard4 as CartridgeFeeModel } from "../src/CartridgeMixedFeeVanguard4.sol";
-import { CartridgeModelVanguard4 as CartridgeModel} from "../src/CartridgeModelVanguard4.sol";
+import { CartridgeFeeModel } from "../src/CartridgeFeeModel.sol";
+import { CartridgeModel} from "../src/CartridgeModel.sol";
 import { CartridgeOwnershipModelWithProxy as OwnershipModel } from "../src/CartridgeOwnershipModelWithProxy.sol";
-import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
+import { BondingCurveModel } from "../src/BondingCurveModel.sol";
 import { CartridgeBondUtils } from "../src/CartridgeBondUtils.sol";
 import { Cartridge } from "../src/Cartridge.sol";
 

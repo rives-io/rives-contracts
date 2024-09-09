@@ -78,7 +78,6 @@ contract OwnershipTapeSubmission is ITapeSubmission,Ownable {
     }
 
     bytes32 payloadHash = keccak256(tape);
-    // DappMessagesDebug.set(c++, "verify payloadHash", abi.encode(payloadHash));
     bytes32 tapeId = this.getTapeIdFromRuleAndHash(abi.encodePacked(payload[4:36]), abi.encodePacked(payloadHash));
 
     return tapeId;

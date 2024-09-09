@@ -12,8 +12,7 @@ import { SystemCall } from "@latticexyz/world/src/SystemCall.sol";
 
 import { Systems } from "@latticexyz/world/src/codegen/index.sol";
 
-import { CartridgeOwner, TapeCreator, RegisteredModel, 
-         DebugCounter, DappMessagesDebug} from "../codegen/index.sol";
+import { CartridgeOwner, TapeCreator, RegisteredModel } from "../codegen/index.sol";
 
 import { CartridgeInsertionModel, CartridgeInsertionModelData } from "../codegen/tables/CartridgeInsertionModel.sol";
 import { TapeSubmissionModel, TapeSubmissionModelData } from "../codegen/tables/TapeSubmissionModel.sol";
@@ -91,19 +90,6 @@ contract CoreSystem is System {
   }
 
   function setDappAddress(address _dapp) public {
-
-    // get namespace system from db by dapp address
-    // ResourceId coreDappSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem");
-
-    uint32 c = DebugCounter.get();
-    DappMessagesDebug.set(c++, "setDappAddress tx.origin", abi.encode(tx.origin));
-    DappMessagesDebug.set(c++, "setDappAddress msg.sender", abi.encode(msg.sender));
-    DappMessagesDebug.set(c++, "setDappAddress _msgSender()", abi.encode(_msgSender()));
-    DappMessagesDebug.set(c++, "setDappAddress this", abi.encode(this));
-    DebugCounter.set(c);
-
-    // leave checks for dapp system
-   
     // call the update set namespace for a dapp
     WorldContextProviderLib.delegatecallWithContextOrRevert(
       _msgSender(),
@@ -113,17 +99,6 @@ contract CoreSystem is System {
         _dapp, 
         WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem"))
     );
-    // SystemCall.callWithHooksOrRevert(
-    //   _msgSender(),
-    //   WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "DappSystem"),
-    //   abi.encodeWithSignature("setNamespaceSystem(address,bytes32)", 
-    //     _dapp, 
-    //     WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem")),
-    //   _msgValue()
-    // );
-    // WorldWithFuncs(_world()).setNamespaceSystem(
-    //   _dapp, 
-    //   WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem"));
   }
 
 }

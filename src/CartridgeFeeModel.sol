@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./ICartridgeFeeModel.sol";
 
-contract CartridgeMixedFeeVanguard4 is ICartridgeFeeModel {
+contract CartridgeFeeModel is ICartridgeFeeModel {
 
     uint256 constant protocolFeeProportionPerK = 100; // 10%
 

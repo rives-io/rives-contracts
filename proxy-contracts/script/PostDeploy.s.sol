@@ -28,26 +28,26 @@ contract PostDeploy is Script {
     vm.startBroadcast(deployerPrivateKey);
 
     ResourceId coreDappSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "DappSystem");
-    console.logString("==== DEBUG ==== DappSystem id: ");
+    console.logString("DappSystem id/address: ");
     console.logBytes(abi.encodePacked(coreDappSystem));
     console.logAddress(Systems.getSystem(coreDappSystem));
-    console.logString("AdminSystem id: ");
+    console.logString("AdminSystem id/address: ");
     ResourceId systemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "AdminSystem");
     console.logBytes(abi.encodePacked(systemId));
     console.logAddress(Systems.getSystem(systemId));
-    console.logString("InfoSystem id: ");
+    console.logString("InfoSystem id/address: ");
     systemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "InfoSystem");
     console.logBytes(abi.encodePacked(systemId));
     console.logAddress(Systems.getSystem(systemId));
-    console.logString("CoreSystem id: ");
+    console.logString("CoreSystem id/address: ");
     systemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem");
     console.logBytes(abi.encodePacked(systemId));
     console.logAddress(Systems.getSystem(systemId));
-    console.logString("InputSystem id: ");
+    console.logString("InputSystem id/address: ");
     systemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "InputSystem");
     console.logBytes(abi.encodePacked(systemId));
     console.logAddress(Systems.getSystem(systemId));
-    console.logString("InputBoxSystem id: ");
+    console.logString("InputBoxSystem id/address: ");
     systemId = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "InputBoxSystem");
     console.logBytes(abi.encodePacked(systemId));
     console.logAddress(Systems.getSystem(systemId));
@@ -59,29 +59,21 @@ contract PostDeploy is Script {
     console.logBytes(abi.encodePacked(selector));
     
     ResourceId coreSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem");
-    selector = world.registerRootFunctionSelector(coreSystem, "setCartridgeOwner(bytes32)","setCartridgeOwner(bytes32)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "setCartridgeOwner(bytes32)","setCartridgeOwner(bytes32)");
 
-    selector = world.registerRootFunctionSelector(coreSystem, "getCartridgeOwner(bytes32)","getCartridgeOwner(bytes32)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "getCartridgeOwner(bytes32)","getCartridgeOwner(bytes32)");
 
-    selector = world.registerRootFunctionSelector(coreSystem, "getTapeCreator(bytes32)","getTapeCreator(bytes32)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "getTapeCreator(bytes32)","getTapeCreator(bytes32)");
     
-    selector = world.registerRootFunctionSelector(coreSystem, "setCartridgeInsertionModel(address,bytes)","setCartridgeInsertionModel(address,bytes)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "setCartridgeInsertionModel(address,bytes)","setCartridgeInsertionModel(address,bytes)");
     
-    selector = world.registerRootFunctionSelector(coreSystem, "getCartridgeInsertionModel()","getCartridgeInsertionModel()");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "getCartridgeInsertionModel()","getCartridgeInsertionModel()");
 
-    selector = world.registerRootFunctionSelector(coreSystem, "setTapeSubmissionModel(bytes32,address,bytes)","setTapeSubmissionModel(bytes32,address,bytes)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "setTapeSubmissionModel(bytes32,address,bytes)","setTapeSubmissionModel(bytes32,address,bytes)");
 
-    selector = world.registerRootFunctionSelector(coreSystem, "getTapeSubmissionModel(bytes32)","getTapeSubmissionModel(bytes32)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "getTapeSubmissionModel(bytes32)","getTapeSubmissionModel(bytes32)");
 
-    selector = world.registerRootFunctionSelector(coreSystem, "getTapeSubmissionModelAddress(bytes32)","getTapeSubmissionModelAddress(bytes32)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreSystem, "getTapeSubmissionModelAddress(bytes32)","getTapeSubmissionModelAddress(bytes32)");
 
     vm.stopBroadcast();
   }

@@ -85,7 +85,6 @@ contract FeeTapeSubmission is ITapeSubmission, Ownable {
     (,,bytes memory tape,,,) = abi.decode(payload[4:],(bytes32,bytes32,bytes,int,bytes32[],bytes));
 
     bytes32 payloadHash = keccak256(tape);
-    // DappMessagesDebug.set(c++, "verify payloadHash", abi.encode(payloadHash));
     bytes32 tapeId = this.getTapeIdFromRuleAndHash(abi.encodePacked(payload[4:36]), abi.encodePacked(payloadHash));
 
     return tapeId;

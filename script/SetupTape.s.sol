@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { TapeProportionalFeeVanguard3v2 as TapeFeeModel } from "../src/TapeProportionalFeeVanguard3v2.sol";
-import { TapeModelVanguard4 as TapeModel} from "../src/TapeModelVanguard4.sol";
+import { TapeFeeModel } from "../src/TapeFeeModel.sol";
+import { TapeModel } from "../src/TapeModel.sol";
 import { TapeOwnershipModelWithProxy as OwnershipModel } from "../src/TapeOwnershipModelWithProxy.sol";
-import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
+import { BondingCurveModel } from "../src/BondingCurveModel.sol";
 import { TapeBondUtils } from "../src/TapeBondUtils.sol";
 import { Tape } from "../src/Tape.sol";
 

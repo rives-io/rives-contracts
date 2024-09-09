@@ -13,5 +13,3 @@ import { TapeCreator } from "./tables/TapeCreator.sol";
 import { RegisteredModel } from "./tables/RegisteredModel.sol";
 import { CartridgeInsertionModel, CartridgeInsertionModelData } from "./tables/CartridgeInsertionModel.sol";
 import { TapeSubmissionModel, TapeSubmissionModelData } from "./tables/TapeSubmissionModel.sol";
-import { DappMessagesDebug, DappMessagesDebugData } from "./tables/DappMessagesDebug.sol";
-import { DebugCounter } from "./tables/DebugCounter.sol";

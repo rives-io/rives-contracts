@@ -50,9 +50,6 @@ contract SetupResources is Script {
     // Start broadcasting transactions from the deployer account
     vm.startBroadcast(deployerPrivateKey);
 
-    console.logAddress(msg.sender);
-    console.logAddress(tx.origin);
-
     console.logString("Current inputBox address is:");
     console.logAddress(InputBoxAddress.get());
     if (InputBoxAddress.get() != inputBoxAddress){
@@ -191,8 +188,6 @@ contract SetupResources is Script {
       console.logAddress(cartridgeInsertionAddress);
       IWorld(worldAddress).core__setCartridgeInsertionModel(cartridgeInsertionAddress,cartridgeInsertionConfig);
     }
-
-    console.logString("Done");
 
     vm.stopBroadcast();
   }

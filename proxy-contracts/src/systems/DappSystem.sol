@@ -17,7 +17,7 @@ import "@latticexyz/world/src/worldResourceTypes.sol";
 import { AccessControl } from "@latticexyz/world/src/AccessControl.sol";
 
 // import { DappAddressNamespace, NamespaceDappAddress, NamespaceSubscriptions, NamespaceDependencies, 
-import { DappAddressNamespace, NamespaceDappAddress, DebugCounter, DappMessagesDebug} from "../codegen/index.sol";
+import { DappAddressNamespace, NamespaceDappAddress } from "../codegen/index.sol";
 import { ICartesiDApp } from "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
 // import "@cartesi/rollups/contracts/inputs/IInputBox.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -41,36 +41,13 @@ contract DappSystem is System {
 
     ResourceId inputSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "InputSystem");
 
-    // // DEBUG
-    uint32 c = DebugCounter.get();
-
-    // DappMessagesDebug.set(c++, "dappResourceIdbytes ",abi.encodePacked(dappResourceIdbytes));
-    // DappMessagesDebug.set(c++, "subs size ",abi.encodePacked(subscriptions.length));
-
-    DappMessagesDebug.set(c++, "DappSystem msg.value", abi.encode(msg.value));
-    DappMessagesDebug.set(c++, "DappSystem _msgValue()", abi.encode(_msgValue()));
-    DebugCounter.set(c);
     bytes memory returnData = IWorld(_world()).call(
       inputSystem,
       abi.encodeWithSignature("prepareInput(address,uint256,bytes)",
         _msgSender(), _msgValue(), _payload));
 
-    // bytes memory returnData = WorldContextProviderLib.delegatecallWithContextOrRevert(
-    //   _msgSender(),
-    //   _msgValue(),
-    //   Systems.getSystem(inputSystem),
-    //   abi.encodeWithSignature("prepareInput(bytes)", _msgSender(), _payload)
-    // );
-
-    // // add msg sender bytes in between
+    // add msg sender bytes in between
     bytes memory _proxiedPayload = abi.encodePacked(_payload[:4],_msgSender(),_payload[4:]);
-
-    // // DEBUG
-    // uint32 c = DebugCounter.get();
-    // address dapp;
-    // DappMessagesDebug.set(c++, "", abi.encodePacked(coreDappSystem));
-    // DappMessagesDebug.set(c++, "", inputBoxCalls[subscriptions.length].callData);
-    // DebugCounter.set(c);
 
     returnData = IWorld(_world()).call(
       inputSystem,
@@ -81,26 +58,13 @@ contract DappSystem is System {
 
   function setNamespaceSystem(address _dapp, ResourceId systemResource) public {
 
-    uint32 c = DebugCounter.get();
-    DappMessagesDebug.set(c++, "setNamespaceSystem tx.origin", abi.encode(tx.origin));
-    DappMessagesDebug.set(c++, "setNamespaceSystem msg.sender", abi.encode(msg.sender));
-    DappMessagesDebug.set(c++, "setNamespaceSystem _msgSender()", abi.encode(_msgSender()));
-    DebugCounter.set(c);
-
-    // uint32 c = DebugCounter.get();
-
-    // DappMessagesDebug.set(c++, "tx.origin", abi.encode(tx.origin));
-    // DappMessagesDebug.set(c++, "_msgSender()", abi.encode(_msgSender()));
-    // DappMessagesDebug.set(c++, "Ownable(_dapp).owner()", abi.encode(Ownable(_dapp).owner()));
-    // DappMessagesDebug.set(c++, "ICartesiDApp(_dapp).getTemplateHash()", abi.encode(ICartesiDApp(_dapp).getTemplateHash()));
-
     // check namespace owner
     AccessControl.requireOwner(systemResource, _msgSender());
     if (NamespaceOwner.get(systemResource.getNamespaceId()) != _msgSender()) revert DappSystem__InvalidOwner();
 
     // comment for nonodo
     // check dapp owner
-    if (Ownable(_dapp).owner() != tx.origin) revert DappSystem__InvalidOwner();
+    if (Ownable(_dapp).owner() != _msgSender()) revert DappSystem__InvalidOwner();
 
     // check dapp is dapp (checking only get template hash)
     (bool success, bytes memory data) = _dapp.staticcall(abi.encodeWithSignature("getTemplateHash()"));
@@ -108,7 +72,6 @@ contract DappSystem is System {
     // comment for nonodo/devnet
     if (ICartesiDApp(_dapp).getTemplateHash() != bytes32(0)) revert DappSystem__InvalidDapp();
 
-    // DebugCounter.set(c);
     DappAddressNamespace.set(_dapp, ResourceId.unwrap(systemResource));
     NamespaceDappAddress.set(ResourceId.unwrap(systemResource), _dapp);
   }
