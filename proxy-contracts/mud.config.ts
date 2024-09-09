@@ -9,12 +9,6 @@ export default defineWorld({
       },
       key: [],
     },
-    // CoreDappAddress: {
-    //   schema: {
-    //     value: "address",
-    //   },
-    //   key: [],
-    // },
     DappAddressNamespace: {
       schema: {
         namespace: "bytes32", 
@@ -29,27 +23,13 @@ export default defineWorld({
       },
       key: ["namespace"],
     },
-    // NamespaceSubscriptions: {
-    //   schema: {
-    //     namespace: "bytes32", 
-    //     subscriptions: "bytes32[]",
-    //   },
-    //   key: ["namespace"],
-    // },
-    // NamespaceDependencies: {
-    //   schema: {
-    //     namespace: "bytes32", 
-    //     subscriptions: "bytes32[]",
-    //   },
-    //   key: ["namespace"],
-    // },
-    CatridgeAssetAddress: {
+    CartridgeAssetAddress: {
       schema: {
         value: "address",
       },
       key: [],
     },
-    CartridgeCreator: {
+    CartridgeOwner: {
       schema: {
         cartridgeId: "bytes32", 
         owner: "address",
@@ -69,19 +49,44 @@ export default defineWorld({
       },
       key: ["tapeId"],
     },
-    DappMessagesDebug: {
-      schema: { 
-        index: "uint32", 
-        message: "string",
-        data: "bytes",
-      },
-      key: ["index"],
-    },
-    DebugCounter: {
+    RegisteredModel: {
       schema: {
-        value: "uint32",
+        modelAddress: "address", 
+        active: "bool",
+      },
+      key: ["modelAddress"],
+    },
+    CartridgeInsertionModel: {
+      schema: {
+        modelAddress: "address",
+        config: "bytes"
       },
       key: [],
+    },
+    TapeSubmissionModel: {
+      schema: {
+        cartridgeId: "bytes32", 
+        modelAddress: "address",
+        config: "bytes"
+      },
+      key: ["cartridgeId"],
+    },
+  },
+  systems: {
+    AdminSystem: {
+      openAccess: false,
+    },
+    InputSystem: {
+      openAccess: false,
+      deploy:{
+        registerWorldFunctions:false
+      }
+    },
+    InputBoxSystem: {
+      openAccess: false,
+      deploy:{
+        registerWorldFunctions:false
+      }
     },
   },
 });

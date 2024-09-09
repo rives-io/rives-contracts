@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./ICartridgeModel.sol";
 
-contract CartridgeModelVanguard4 is ICartridgeModel {
+contract CartridgeModel is ICartridgeModel {
 
     // Vanguard4 up
     struct EventModel {

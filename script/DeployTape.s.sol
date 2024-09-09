@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { TapeProportionalFeeVanguard3v2 as TapeFeeModel } from "../src/TapeProportionalFeeVanguard3v2.sol";
-import { TapeModelVanguard4 as TapeModel} from "../src/TapeModelVanguard4.sol";
-import { TapeOwnershipModelVanguard4 as OwnershipModel } from "../src/TapeOwnershipModelVanguard4.sol";
-import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
+import { TapeFeeModel } from "../src/TapeFeeModel.sol";
+import { TapeModel } from "../src/TapeModel.sol";
+import { TapeOwnershipModelWithProxy as OwnershipModel } from "../src/TapeOwnershipModelWithProxy.sol";
+import { BondingCurveModel } from "../src/BondingCurveModel.sol";
 import { TapeBondUtils } from "../src/TapeBondUtils.sol";
 import { Tape } from "../src/Tape.sol";
 
@@ -19,14 +19,11 @@ contract DeployTape is Script {
     bytes32 constant SALT = bytes32(0);
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        // address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+        address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
         // address dappAddress = vm.envAddress("DAPP_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
         console.logString("Deploying Tape Contracts");
-
-        // Currency 
-        // address currencyAddress = address(0);
 
         // Tape Fee Model 
         bytes memory feeModelCode = abi.encodePacked(type(TapeFeeModel).creationCode);
@@ -55,18 +52,14 @@ contract DeployTape is Script {
         }
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode,abi.encode(operatorAddress));
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         console.logString("Expected ownershipModelAddress");
         console.logAddress(ownershipModelAddress);
         if (checkSize(ownershipModelAddress) == 0) {
-            OwnershipModel ownershipModel = new OwnershipModel{salt: SALT}();
+            OwnershipModel ownershipModel = new OwnershipModel{salt: SALT}(operatorAddress);
             console.logString("Deployed ownershipModelAddress");
             console.logAddress(address(ownershipModel));
-            // console.logString("Transfering ownership of ownership model from - to");
-            // console.logAddress(ownershipModel.owner());
-            // console.logAddress(operatorAddress);
-            // ownershipModel.transferOwnership(operatorAddress);
         } else {
             console.logString("Already deployed ownershipModelAddress");
         }
@@ -101,6 +94,7 @@ contract DeployTape is Script {
         // Tape
         bytes memory tapeCode = abi.encodePacked(type(Tape).creationCode,
             abi.encode(
+                operatorAddress,
                 tapeBondUtilsAddress,
                 100 // max steps
             )
@@ -110,42 +104,15 @@ contract DeployTape is Script {
         console.logAddress(tapeAddress);
         if (checkSize(tapeAddress) == 0) {
             Tape tape = new Tape{salt: SALT}(
+                operatorAddress,
                 tapeBondUtilsAddress,
                 100 // max steps
             );
             console.logString("Deployed tapeAddress");
             console.logAddress(address(tape));
-            // console.logString("Transfering ownership of tape contract fom - to");
-            // console.logAddress(tape.owner());
-            // console.logAddress(operatorAddress);
-            // tape.transferOwnership(operatorAddress);
         } else {
             console.logString("Already deployed tapeAddress");
         }
-
-
-
-        // uint128[] memory ranges =  new uint128[](3); //[1,5,1000];
-        // ranges[0] = 1;
-        // ranges[1] = 5;
-        // ranges[2] = 1000;
-        // uint128[] memory coefficients = new uint128[](3);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
-        // coefficients[0] = 1000000000000000;
-        // coefficients[1] = 1000000000000000;
-        // coefficients[2] = 2000000000000000;
-        // tape.updateBondingCurveParams(
-        //     // newCurrencyToken, newFeeModel, newTapeModel, newTapeOwnershipModelAddress, newTapeBondingCurveModelAddress, newMaxSupply, stepRangesMax, stepCoefficients
-        //     address(0), //currencyAddress,
-        //     feeModelAddress,
-        //     tapeModelAddress,
-        //     ownershipModelAddress,
-        //     bcModelAddress,
-        //     1000, // max supply
-        //     ranges,
-        //     coefficients
-        // );
-
-        // tape.addDapp(dappAddress);
 
         vm.stopBroadcast();
     }

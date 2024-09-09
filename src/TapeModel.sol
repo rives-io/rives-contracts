@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./ITapeModel.sol";
 
-contract TapeModelVanguard4 is ITapeModel {
+contract TapeModel is ITapeModel {
 
     // VerificationOutput
     // version:                Bytes32
