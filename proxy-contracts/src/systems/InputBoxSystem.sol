@@ -5,7 +5,7 @@ import { System } from "@latticexyz/world/src/System.sol";
 
 import "@cartesi/rollups/contracts/inputs/IInputBox.sol";
 
-import { InputBoxAddress } from "../codegen/index.sol";
+import { InputBoxAddress } from "../codegen/tables/InputBoxAddress.sol";
 
 contract InputBoxSystem is System {
   error InputBoxSystem__NoInputBox();

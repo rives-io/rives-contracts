@@ -5,15 +5,15 @@ interface IBondingCurveModel {
     error BC__InvalidBondParams(string reason);
 
     struct BondingCurveStep {
-        uint128 rangeMax;
-        uint128 coefficient;
+        uint256 rangeMax;
+        uint256 coefficient;
     }
 
     function validateBondingCurve(
         bytes32 id,
-        uint128[] memory stepRangesMax, 
-        uint128[] memory stepCoefficients, uint128 newMaxSupply) external pure returns(BondingCurveStep[] memory) ;
+        uint256[] memory stepRangesMax, 
+        uint256[] memory stepCoefficients, uint256 newMaxSupply) external pure returns(BondingCurveStep[] memory) ;
 
-    function validateBondParams(uint256 maxSteps, uint128[] memory stepRangesMax, uint128[] memory stepCoefficients) pure external ;
+    function validateBondParams(uint256 maxSteps, uint256[] memory stepRangesMax, uint256[] memory stepCoefficients) pure external ;
 
 }

@@ -5,10 +5,10 @@ import "./ITapeFeeModel.sol";
 
 contract TapeFixedFee is ITapeFeeModel {
 
-    uint128 constant cartridgeOwnerFee = 1000;
-    uint128 constant tapeCreatorFee = 1000;
-    uint128 constant protocolFee = 500;
-    uint128 constant royaltiesFee = 500;
+    uint256 constant cartridgeOwnerFee = 1000;
+    uint256 constant tapeCreatorFee = 1000;
+    uint256 constant protocolFee = 500;
+    uint256 constant royaltiesFee = 500;
 
     function getMintFees(
         uint256 amount,

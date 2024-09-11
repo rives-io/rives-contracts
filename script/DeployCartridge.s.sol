@@ -6,10 +6,10 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { CartridgeProportionalFeeVanguard3v2 as CartridgeFeeModel } from "../src/CartridgeProportionalFeeVanguard3v2.sol";
-import { CartridgeModelVanguard4 as CartridgeModel} from "../src/CartridgeModelVanguard4.sol";
-import { CartridgeOwnershipModelVanguard4 as OwnershipModel } from "../src/CartridgeOwnershipModelVanguard4.sol";
-import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
+import { CartridgeFeeModel } from "../src/CartridgeFeeModel.sol";
+import { CartridgeModel} from "../src/CartridgeModel.sol";
+import { CartridgeOwnershipModelWithProxy as OwnershipModel } from "../src/CartridgeOwnershipModelWithProxy.sol";
+import { BondingCurveModel } from "../src/BondingCurveModel.sol";
 import { CartridgeBondUtils } from "../src/CartridgeBondUtils.sol";
 import { Cartridge } from "../src/Cartridge.sol";
 
@@ -19,13 +19,11 @@ contract DeployCartridge is Script {
     bytes32 constant SALT = bytes32(0);
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        // address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+        address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
         // address dappAddress = vm.envAddress("DAPP_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
-
-        // Currency 
-        // address currencyAddress = address(0);
+        console.logString("Deploying Cartridge Contracts");
 
         // Cartridge Fee Model 
         bytes memory feeModelCode = abi.encodePacked(type(CartridgeFeeModel).creationCode);
@@ -54,18 +52,14 @@ contract DeployCartridge is Script {
         }
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode,abi.encode(operatorAddress));
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         console.logString("Expected ownershipModelAddress");
         console.logAddress(ownershipModelAddress);
         if (checkSize(ownershipModelAddress) == 0) {
-            OwnershipModel ownershipModel = new OwnershipModel{salt: SALT}();
+            OwnershipModel ownershipModel = new OwnershipModel{salt: SALT}(operatorAddress);
             console.logString("Deployed ownershipModelAddress");
             console.logAddress(address(ownershipModel));
-            // console.logString("Transfering ownership of ownership model from - to");
-            // console.logAddress(ownershipModel.owner());
-            // console.logAddress(operatorAddress);
-            // ownershipModel.transferOwnership(operatorAddress);
         } else {
             console.logString("Already deployed ownershipModelAddress");
         }
@@ -100,6 +94,7 @@ contract DeployCartridge is Script {
         // Cartridge
         bytes memory cartridgeCode = abi.encodePacked(type(Cartridge).creationCode,
             abi.encode(
+                operatorAddress,
                 cartridgeBondUtilsAddress,
                 100 // max steps
             )
@@ -109,42 +104,15 @@ contract DeployCartridge is Script {
         console.logAddress(cartridgeAddress);
         if (checkSize(cartridgeAddress) == 0) {
             Cartridge cartridge = new Cartridge{salt: SALT}(
+                operatorAddress,
                 cartridgeBondUtilsAddress,
                 100 // max steps
             );
             console.logString("Deployed cartridgeAddress");
             console.logAddress(address(cartridge));
-            // console.logString("Transfering ownership of cartridge contract fom - to");
-            // console.logAddress(cartridge.owner());
-            // console.logAddress(operatorAddress);
-            // cartridge.transferOwnership(operatorAddress);
         } else {
             console.logString("Already deployed cartridgeAddress");
         }
-
-
-
-        // uint128[] memory ranges =  new uint128[](3); //[1,5,1000];
-        // ranges[0] = 1;
-        // ranges[1] = 5;
-        // ranges[2] = 1000;
-        // uint128[] memory coefficients = new uint128[](3);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
-        // coefficients[0] = 1000000000000000;
-        // coefficients[1] = 1000000000000000;
-        // coefficients[2] = 2000000000000000;
-        // cartridge.updateBondingCurveParams(
-        //     // newCurrencyToken, newFeeModel, newCartridgeModel, newCartridgeOwnershipModelAddress, newCartridgeBondingCurveModelAddress, newMaxSupply, stepRangesMax, stepCoefficients
-        //     address(0), //currencyAddress,
-        //     feeModelAddress,
-        //     cartridgeModelAddress,
-        //     ownershipModelAddress,
-        //     bcModelAddress,
-        //     1000, // max supply
-        //     ranges,
-        //     coefficients
-        // );
-
-        // cartridge.addDapp(dappAddress);
 
         vm.stopBroadcast();
     }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./ITapeFeeModel.sol";
 
-contract TapeProportionalFeeVanguard3v2 is ITapeFeeModel {
+contract TapeFeeModel is ITapeFeeModel {
 
     uint128 constant feeProportionPerK = 100;
     uint128 constant protocolFeeProportionPerK = 100;

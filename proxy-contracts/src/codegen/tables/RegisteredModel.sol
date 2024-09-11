@@ -16,17 +16,17 @@ import { Schema } from "@latticexyz/store/src/Schema.sol";
 import { EncodedLengths, EncodedLengthsLib } from "@latticexyz/store/src/EncodedLengths.sol";
 import { ResourceId } from "@latticexyz/store/src/ResourceId.sol";
 
-library CartridgeCreator {
-  // Hex below is the result of `WorldResourceIdLib.encode({ namespace: "core", name: "CartridgeCreator", typeId: RESOURCE_TABLE });`
-  ResourceId constant _tableId = ResourceId.wrap(0x7462636f72650000000000000000000043617274726964676543726561746f72);
+library RegisteredModel {
+  // Hex below is the result of `WorldResourceIdLib.encode({ namespace: "core", name: "RegisteredModel", typeId: RESOURCE_TABLE });`
+  ResourceId constant _tableId = ResourceId.wrap(0x7462636f726500000000000000000000526567697374657265644d6f64656c00);
 
   FieldLayout constant _fieldLayout =
-    FieldLayout.wrap(0x0014010014000000000000000000000000000000000000000000000000000000);
+    FieldLayout.wrap(0x0001010001000000000000000000000000000000000000000000000000000000);
 
-  // Hex-encoded key schema of (bytes32)
-  Schema constant _keySchema = Schema.wrap(0x002001005f000000000000000000000000000000000000000000000000000000);
-  // Hex-encoded value schema of (address)
-  Schema constant _valueSchema = Schema.wrap(0x0014010061000000000000000000000000000000000000000000000000000000);
+  // Hex-encoded key schema of (address)
+  Schema constant _keySchema = Schema.wrap(0x0014010061000000000000000000000000000000000000000000000000000000);
+  // Hex-encoded value schema of (bool)
+  Schema constant _valueSchema = Schema.wrap(0x0001010060000000000000000000000000000000000000000000000000000000);
 
   /**
    * @notice Get the table's key field names.
@@ -34,7 +34,7 @@ library CartridgeCreator {
    */
   function getKeyNames() internal pure returns (string[] memory keyNames) {
     keyNames = new string[](1);
-    keyNames[0] = "cartridgeId";
+    keyNames[0] = "modelAddress";
   }
 
   /**
@@ -43,7 +43,7 @@ library CartridgeCreator {
    */
   function getFieldNames() internal pure returns (string[] memory fieldNames) {
     fieldNames = new string[](1);
-    fieldNames[0] = "owner";
+    fieldNames[0] = "active";
   }
 
   /**
@@ -61,95 +61,95 @@ library CartridgeCreator {
   }
 
   /**
-   * @notice Get owner.
+   * @notice Get active.
    */
-  function getOwner(bytes32 cartridgeId) internal view returns (address owner) {
+  function getActive(address modelAddress) internal view returns (bool active) {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
     bytes32 _blob = StoreSwitch.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (address(bytes20(_blob)));
+    return (_toBool(uint8(bytes1(_blob))));
   }
 
   /**
-   * @notice Get owner.
+   * @notice Get active.
    */
-  function _getOwner(bytes32 cartridgeId) internal view returns (address owner) {
+  function _getActive(address modelAddress) internal view returns (bool active) {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
     bytes32 _blob = StoreCore.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (address(bytes20(_blob)));
+    return (_toBool(uint8(bytes1(_blob))));
   }
 
   /**
-   * @notice Get owner.
+   * @notice Get active.
    */
-  function get(bytes32 cartridgeId) internal view returns (address owner) {
+  function get(address modelAddress) internal view returns (bool active) {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
     bytes32 _blob = StoreSwitch.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (address(bytes20(_blob)));
+    return (_toBool(uint8(bytes1(_blob))));
   }
 
   /**
-   * @notice Get owner.
+   * @notice Get active.
    */
-  function _get(bytes32 cartridgeId) internal view returns (address owner) {
+  function _get(address modelAddress) internal view returns (bool active) {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
     bytes32 _blob = StoreCore.getStaticField(_tableId, _keyTuple, 0, _fieldLayout);
-    return (address(bytes20(_blob)));
+    return (_toBool(uint8(bytes1(_blob))));
   }
 
   /**
-   * @notice Set owner.
+   * @notice Set active.
    */
-  function setOwner(bytes32 cartridgeId, address owner) internal {
+  function setActive(address modelAddress, bool active) internal {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
-    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((owner)), _fieldLayout);
+    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((active)), _fieldLayout);
   }
 
   /**
-   * @notice Set owner.
+   * @notice Set active.
    */
-  function _setOwner(bytes32 cartridgeId, address owner) internal {
+  function _setActive(address modelAddress, bool active) internal {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
-    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((owner)), _fieldLayout);
+    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((active)), _fieldLayout);
   }
 
   /**
-   * @notice Set owner.
+   * @notice Set active.
    */
-  function set(bytes32 cartridgeId, address owner) internal {
+  function set(address modelAddress, bool active) internal {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
-    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((owner)), _fieldLayout);
+    StoreSwitch.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((active)), _fieldLayout);
   }
 
   /**
-   * @notice Set owner.
+   * @notice Set active.
    */
-  function _set(bytes32 cartridgeId, address owner) internal {
+  function _set(address modelAddress, bool active) internal {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
-    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((owner)), _fieldLayout);
+    StoreCore.setStaticField(_tableId, _keyTuple, 0, abi.encodePacked((active)), _fieldLayout);
   }
 
   /**
    * @notice Delete all data for given keys.
    */
-  function deleteRecord(bytes32 cartridgeId) internal {
+  function deleteRecord(address modelAddress) internal {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
     StoreSwitch.deleteRecord(_tableId, _keyTuple);
   }
@@ -157,9 +157,9 @@ library CartridgeCreator {
   /**
    * @notice Delete all data for given keys.
    */
-  function _deleteRecord(bytes32 cartridgeId) internal {
+  function _deleteRecord(address modelAddress) internal {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
     StoreCore.deleteRecord(_tableId, _keyTuple, _fieldLayout);
   }
@@ -168,8 +168,8 @@ library CartridgeCreator {
    * @notice Tightly pack static (fixed length) data using this table's schema.
    * @return The static data, encoded into a sequence of bytes.
    */
-  function encodeStatic(address owner) internal pure returns (bytes memory) {
-    return abi.encodePacked(owner);
+  function encodeStatic(bool active) internal pure returns (bytes memory) {
+    return abi.encodePacked(active);
   }
 
   /**
@@ -178,8 +178,8 @@ library CartridgeCreator {
    * @return The lengths of the dynamic fields (packed into a single bytes32 value).
    * @return The dynamic (variable length) data, encoded into a sequence of bytes.
    */
-  function encode(address owner) internal pure returns (bytes memory, EncodedLengths, bytes memory) {
-    bytes memory _staticData = encodeStatic(owner);
+  function encode(bool active) internal pure returns (bytes memory, EncodedLengths, bytes memory) {
+    bytes memory _staticData = encodeStatic(active);
 
     EncodedLengths _encodedLengths;
     bytes memory _dynamicData;
@@ -190,10 +190,22 @@ library CartridgeCreator {
   /**
    * @notice Encode keys as a bytes32 array using this table's field layout.
    */
-  function encodeKeyTuple(bytes32 cartridgeId) internal pure returns (bytes32[] memory) {
+  function encodeKeyTuple(address modelAddress) internal pure returns (bytes32[] memory) {
     bytes32[] memory _keyTuple = new bytes32[](1);
-    _keyTuple[0] = cartridgeId;
+    _keyTuple[0] = bytes32(uint256(uint160(modelAddress)));
 
     return _keyTuple;
+  }
+}
+
+/**
+ * @notice Cast a value to a bool.
+ * @dev Boolean values are encoded as uint8 (1 = true, 0 = false), but Solidity doesn't allow casting between uint8 and bool.
+ * @param value The uint8 value to convert.
+ * @return result The boolean value.
+ */
+function _toBool(uint8 value) pure returns (bool result) {
+  assembly {
+    result := value
   }
 }

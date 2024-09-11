@@ -6,26 +6,28 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { CartridgeProportionalFeeVanguard3v2 as CartridgeFeeModel } from "../src/CartridgeProportionalFeeVanguard3v2.sol";
-import { CartridgeModelVanguard4 as CartridgeModel} from "../src/CartridgeModelVanguard4.sol";
-import { CartridgeOwnershipModelVanguard4 as OwnershipModel } from "../src/CartridgeOwnershipModelVanguard4.sol";
-import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
+import { CartridgeFeeModel } from "../src/CartridgeFeeModel.sol";
+import { CartridgeModel} from "../src/CartridgeModel.sol";
+import { CartridgeOwnershipModelWithProxy as OwnershipModel } from "../src/CartridgeOwnershipModelWithProxy.sol";
+import { BondingCurveModel } from "../src/BondingCurveModel.sol";
 import { CartridgeBondUtils } from "../src/CartridgeBondUtils.sol";
 import { Cartridge } from "../src/Cartridge.sol";
 
 
-contract SECP256K1_ORDERetupCartridge is Script {
+contract SetupCartridge is Script {
     address constant DEPLOY_FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
     bytes32 constant SALT = bytes32(0);
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address dappAddress = vm.envAddress("DAPP_ADDRESS");
         address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+        address worldAddress = vm.envAddress("WORLD_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
+        console.logString("Setup Cartridge Contracts");
 
         // Currency 
-        // address currencyAddress = address(0);
+        address currencyAddress = address(0);
 
         // Cartridge Fee Model 
         bytes memory feeModelCode = abi.encodePacked(type(CartridgeFeeModel).creationCode);        
@@ -34,7 +36,7 @@ contract SECP256K1_ORDERetupCartridge is Script {
         bytes memory cartridgeModelCode = abi.encodePacked(type(CartridgeModel).creationCode);
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode,abi.encode(operatorAddress));
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         
         // Bonding Curve Model 
@@ -46,38 +48,16 @@ contract SECP256K1_ORDERetupCartridge is Script {
         // Cartridge
         bytes memory cartridgeCode = abi.encodePacked(type(Cartridge).creationCode,
             abi.encode(
+                operatorAddress,
                 Create2.computeAddress(SALT, keccak256(cartridgeBondUtilsCode),DEPLOY_FACTORY),
                 100 // max steps
             )
         );
         Cartridge cartridge = Cartridge(Create2.computeAddress(SALT, keccak256(cartridgeCode),DEPLOY_FACTORY));
 
-        console.logString("Updating bonding curve params");
-        // console.logAddress(msg.sender);
-        // console.logAddress(tx.origin);
-        // console.logAddress(cartridge.owner());
-        uint128[] memory ranges =  new uint128[](2); //[1,5,1000];
-        ranges[0] = 1;
-        ranges[1] = 10000;
-        uint128[] memory coefficients = new uint128[](2);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
-        coefficients[0] = 10000000000000000;
-        coefficients[1] = 1000000000000000;
-        cartridge.updateBondingCurveParams(
-            // newCurrencyToken, newFeeModel, newCartridgeModel, newCartridgeOwnershipModelAddress, newCartridgeBondingCurveModelAddress, newMaxSupply, stepRangesMax, stepCoefficients
-            address(0), //currencyAddress,
-            Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY),
-            Create2.computeAddress(SALT, keccak256(cartridgeModelCode),DEPLOY_FACTORY),
-            ownershipModelAddress,
-            Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
-            10000, // max supply
-            50, // fee config - feeProportionPerK
-            ranges,
-            coefficients
-        );
-
         if (!cartridge.dappAddresses(dappAddress)) {
             console.logString("Adding dapp address");
-            cartridge.addDapp(dappAddress);
+            cartridge.setDapp(dappAddress,true);
         }
 
         console.logString("Setting uri");
@@ -90,6 +70,14 @@ contract SECP256K1_ORDERetupCartridge is Script {
             OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
         }
 
+        // only on vanguard 4+
+        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
+            console.logString("Setting the worldAddress of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
+            console.logAddress(worldAddress);
+            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
+        }
+
         if (cartridge.owner() != operatorAddress && cartridge.owner() == tx.origin) {
             console.logString("Transfering ownership of cartridge from - to");
             console.logAddress(cartridge.owner());
@@ -97,6 +85,26 @@ contract SECP256K1_ORDERetupCartridge is Script {
             cartridge.transferOwnership(operatorAddress);
         }
         
+        console.logString("Updating bonding curve params");
+
+        uint256[] memory ranges =  new uint256[](2); //[1,5,1000];
+        ranges[0] = 1;
+        ranges[1] = 10000;
+        uint256[] memory coefficients = new uint256[](2);//[uint256(1000000000000000),uint256(1000000000000000),uint256(2000000000000000)];
+        coefficients[0] = 10000000000000000;
+        coefficients[1] = 1000000000000000;
+        cartridge.updateBondingCurveParams(
+            currencyAddress,
+            Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY),
+            Create2.computeAddress(SALT, keccak256(cartridgeModelCode),DEPLOY_FACTORY),
+            ownershipModelAddress,
+            Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
+            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, // max supply
+            50, // fee config - feeProportionPerK
+            ranges,
+            coefficients
+        );
+
         vm.stopBroadcast();
     }
     
