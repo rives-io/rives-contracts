@@ -82,8 +82,6 @@ contract InputSystem is System {
           WorldResourceIdLib.encodeNamespace(bytes14("core")), model.modelAddress, value);
       }
 
-      (, bytes memory data) = model.modelAddress.call(abi.encodeWithSignature("test()"));
-    
       bytes32 tapeId = ITapeSubmission(model.modelAddress).
         validateTapeSubmission(sender,value,cartridgeId,payload,model.config);
 

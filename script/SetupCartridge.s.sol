@@ -55,6 +55,36 @@ contract SetupCartridge is Script {
         );
         Cartridge cartridge = Cartridge(Create2.computeAddress(SALT, keccak256(cartridgeCode),DEPLOY_FACTORY));
 
+        if (!cartridge.dappAddresses(dappAddress)) {
+            console.logString("Adding dapp address");
+            cartridge.setDapp(dappAddress,true);
+        }
+
+        console.logString("Setting uri");
+        cartridge.setURI("https://vanguard.rives.io/cartridges/{id}");
+
+        if (OwnershipModel(ownershipModelAddress).owner() != operatorAddress && OwnershipModel(ownershipModelAddress).owner() == tx.origin) {
+            console.logString("Transfering ownership of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).owner());
+            console.logAddress(operatorAddress);
+            OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
+        }
+
+        // only on vanguard 4+
+        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
+            console.logString("Setting the worldAddress of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
+            console.logAddress(worldAddress);
+            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
+        }
+
+        if (cartridge.owner() != operatorAddress && cartridge.owner() == tx.origin) {
+            console.logString("Transfering ownership of cartridge from - to");
+            console.logAddress(cartridge.owner());
+            console.logAddress(operatorAddress);
+            cartridge.transferOwnership(operatorAddress);
+        }
+        
         console.logString("Updating bonding curve params");
 
         uint256[] memory ranges =  new uint256[](2); //[1,5,1000];
@@ -75,36 +105,6 @@ contract SetupCartridge is Script {
             coefficients
         );
 
-        if (!cartridge.dappAddresses(dappAddress)) {
-            console.logString("Adding dapp address");
-            cartridge.setDapp(dappAddress,true);
-        }
-
-        console.logString("Setting uri");
-        cartridge.setURI("https://vanguard.rives.io/cartridges/{id}");
-
-        if (OwnershipModel(ownershipModelAddress).owner() != operatorAddress && OwnershipModel(ownershipModelAddress).owner() == tx.origin) {
-            console.logString("Transfering ownership of ownership model from - to");
-            console.logAddress(OwnershipModel(ownershipModelAddress).owner());
-            console.logAddress(operatorAddress);
-            OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
-        }
-
-        // only on vanguard 4
-        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
-            console.logString("Setting the worldAddress of ownership model from - to");
-            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
-            console.logAddress(worldAddress);
-            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
-        }
-
-        if (cartridge.owner() != operatorAddress && cartridge.owner() == tx.origin) {
-            console.logString("Transfering ownership of cartridge from - to");
-            console.logAddress(cartridge.owner());
-            console.logAddress(operatorAddress);
-            cartridge.transferOwnership(operatorAddress);
-        }
-        
         vm.stopBroadcast();
     }
     
