@@ -55,6 +55,36 @@ contract SetupTape is Script {
         );
         Tape tape = Tape(Create2.computeAddress(SALT, keccak256(tapeCode),DEPLOY_FACTORY));
 
+        if (!tape.dappAddresses(dappAddress)) {
+            console.logString("Adding dapp address");
+            tape.setDapp(dappAddress,true);
+        }
+
+        console.logString("Setting uri");
+        tape.setURI("https://vanguard.rives.io/tapes/{id}");
+
+        if (OwnershipModel(ownershipModelAddress).owner() != operatorAddress && OwnershipModel(ownershipModelAddress).owner() == tx.origin) {
+            console.logString("Transfering ownership of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).owner());
+            console.logAddress(operatorAddress);
+            OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
+        }
+
+        // only on vanguard 4
+        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
+            console.logString("Setting the worldAddress of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
+            console.logAddress(worldAddress);
+            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
+        }
+
+        if (tape.owner() != operatorAddress && tape.owner() == tx.origin) {
+            console.logString("Transfering ownership of tape from - to");
+            console.logAddress(tape.owner());
+            console.logAddress(operatorAddress);
+            tape.transferOwnership(operatorAddress);
+        }
+        
         console.logString("Updating bonding curve params");
 
         // uint256[] memory ranges =  new uint256[](6); //[1,5,1000];
@@ -87,36 +117,6 @@ contract SetupTape is Script {
             coefficients
         );
 
-        if (!tape.dappAddresses(dappAddress)) {
-            console.logString("Adding dapp address");
-            tape.setDapp(dappAddress,true);
-        }
-
-        console.logString("Setting uri");
-        tape.setURI("https://vanguard.rives.io/tapes/{id}");
-
-        if (OwnershipModel(ownershipModelAddress).owner() != operatorAddress && OwnershipModel(ownershipModelAddress).owner() == tx.origin) {
-            console.logString("Transfering ownership of ownership model from - to");
-            console.logAddress(OwnershipModel(ownershipModelAddress).owner());
-            console.logAddress(operatorAddress);
-            OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
-        }
-
-        // only on vanguard 4
-        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
-            console.logString("Setting the worldAddress of ownership model from - to");
-            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
-            console.logAddress(worldAddress);
-            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
-        }
-
-        if (tape.owner() != operatorAddress && tape.owner() == tx.origin) {
-            console.logString("Transfering ownership of tape from - to");
-            console.logAddress(tape.owner());
-            console.logAddress(operatorAddress);
-            tape.transferOwnership(operatorAddress);
-        }
-        
         vm.stopBroadcast();
     }
     

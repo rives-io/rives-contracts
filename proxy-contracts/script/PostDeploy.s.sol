@@ -52,11 +52,9 @@ contract PostDeploy is Script {
     console.logBytes(abi.encodePacked(systemId));
     console.logAddress(Systems.getSystem(systemId));
 
-    bytes4 selector = world.registerRootFunctionSelector(coreDappSystem, "addInput(address,bytes)","addInput(address,bytes)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreDappSystem, "addInput(address,bytes)","addInput(address,bytes)");
     
-    selector = world.registerRootFunctionSelector(coreDappSystem, "setNamespaceSystem(address,bytes32)","setNamespaceSystem(address,bytes32)");
-    console.logBytes(abi.encodePacked(selector));
+    world.registerRootFunctionSelector(coreDappSystem, "setNamespaceSystem(address,bytes32)","setNamespaceSystem(address,bytes32)");
     
     ResourceId coreSystem = WorldResourceIdLib.encode(RESOURCE_SYSTEM, "core", "CoreSystem");
     world.registerRootFunctionSelector(coreSystem, "setCartridgeOwner(bytes32)","setCartridgeOwner(bytes32)");
@@ -74,6 +72,8 @@ contract PostDeploy is Script {
     world.registerRootFunctionSelector(coreSystem, "getTapeSubmissionModel(bytes32)","getTapeSubmissionModel(bytes32)");
 
     world.registerRootFunctionSelector(coreSystem, "getTapeSubmissionModelAddress(bytes32)","getTapeSubmissionModelAddress(bytes32)");
+
+    world.registerRootFunctionSelector(coreSystem, "getRegisteredModel(address)","getRegisteredModel(address)");
 
     vm.stopBroadcast();
   }
