@@ -9,12 +9,6 @@ export default defineWorld({
       },
       key: [],
     },
-    // CoreDappAddress: {
-    //   schema: {
-    //     value: "address",
-    //   },
-    //   key: [],
-    // },
     DappAddressNamespace: {
       schema: {
         namespace: "bytes32", 
@@ -29,33 +23,70 @@ export default defineWorld({
       },
       key: ["namespace"],
     },
-    // NamespaceSubscriptions: {
-    //   schema: {
-    //     namespace: "bytes32", 
-    //     subscriptions: "bytes32[]",
-    //   },
-    //   key: ["namespace"],
-    // },
-    // NamespaceDependencies: {
-    //   schema: {
-    //     namespace: "bytes32", 
-    //     subscriptions: "bytes32[]",
-    //   },
-    //   key: ["namespace"],
-    // },
-    DappMessagesDebug: {
-      schema: { 
-        index: "uint32", 
-        message: "string",
-        data: "bytes",
-      },
-      key: ["index"],
-    },
-    DebugCounter: {
+    CartridgeAssetAddress: {
       schema: {
-        value: "uint32",
+        value: "address",
       },
       key: [],
+    },
+    CartridgeOwner: {
+      schema: {
+        cartridgeId: "bytes32", 
+        owner: "address",
+      },
+      key: ["cartridgeId"],
+    },
+    TapeAssetAddress: {
+      schema: {
+        value: "address",
+      },
+      key: [],
+    },
+    TapeCreator: {
+      schema: {
+        tapeId: "bytes32", 
+        owner: "address",
+      },
+      key: ["tapeId"],
+    },
+    RegisteredModel: {
+      schema: {
+        modelAddress: "address", 
+        active: "bool",
+      },
+      key: ["modelAddress"],
+    },
+    CartridgeInsertionModel: {
+      schema: {
+        modelAddress: "address",
+        config: "bytes"
+      },
+      key: [],
+    },
+    TapeSubmissionModel: {
+      schema: {
+        cartridgeId: "bytes32", 
+        modelAddress: "address",
+        config: "bytes"
+      },
+      key: ["cartridgeId"],
+    },
+  },
+  systems: {
+    AdminSystem: {
+      openAccess: false,
+    },
+    InputSystem: {
+      openAccess: false,
+      deploy:{
+        registerWorldFunctions:false
+      }
+    },
+    InputBoxSystem: {
+      openAccess: false,
+      deploy:{
+        registerWorldFunctions:false
+      }
     },
   },
 });

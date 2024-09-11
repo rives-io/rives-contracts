@@ -6,26 +6,28 @@ import { Script,console } from "forge-std/src/Script.sol";
 import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 
 
-import { TapeProportionalFeeVanguard3v2 as TapeFeeModel } from "../src/TapeProportionalFeeVanguard3v2.sol";
-import { TapeModelVanguard3v2 as TapeModel} from "../src/TapeModelVanguard3v2.sol";
-import { OwnershipModelVanguard3 as OwnershipModel } from "../src/OwnershipModelVanguard3.sol";
-import { BondingCurveModelVanguard3 as BondingCurveModel } from "../src/BondingCurveModelVanguard3.sol";
+import { TapeFeeModel } from "../src/TapeFeeModel.sol";
+import { TapeModel } from "../src/TapeModel.sol";
+import { TapeOwnershipModelWithProxy as OwnershipModel } from "../src/TapeOwnershipModelWithProxy.sol";
+import { BondingCurveModel } from "../src/BondingCurveModel.sol";
 import { TapeBondUtils } from "../src/TapeBondUtils.sol";
 import { Tape } from "../src/Tape.sol";
 
 
-contract SECP256K1_ORDERetupTape is Script {
+contract SetupTape is Script {
     address constant DEPLOY_FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
     bytes32 constant SALT = bytes32(0);
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address dappAddress = vm.envAddress("DAPP_ADDRESS");
         address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
+        address worldAddress = vm.envAddress("WORLD_ADDRESS");
         vm.startBroadcast(deployerPrivateKey);
 
+        console.logString("Setup Tape Contracts");
 
         // Currency 
-        // address currencyAddress = address(0);
+        address currencyAddress = address(0);
 
         // Tape Fee Model 
         bytes memory feeModelCode = abi.encodePacked(type(TapeFeeModel).creationCode);        
@@ -34,7 +36,7 @@ contract SECP256K1_ORDERetupTape is Script {
         bytes memory tapeModelCode = abi.encodePacked(type(TapeModel).creationCode);
         
         // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode);
+        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode,abi.encode(operatorAddress));
         address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
         
         // Bonding Curve Model 
@@ -46,45 +48,16 @@ contract SECP256K1_ORDERetupTape is Script {
         // Tape
         bytes memory tapeCode = abi.encodePacked(type(Tape).creationCode,
             abi.encode(
+                operatorAddress,
                 Create2.computeAddress(SALT, keccak256(tapeBondUtilsCode),DEPLOY_FACTORY),
                 100 // max steps
             )
         );
         Tape tape = Tape(Create2.computeAddress(SALT, keccak256(tapeCode),DEPLOY_FACTORY));
 
-        console.logString("Updating bonding curve params");
-        // console.logAddress(msg.sender);
-        // console.logAddress(tx.origin);
-        // console.logAddress(tape.owner());
-        uint128[] memory ranges =  new uint128[](6); //[1,5,1000];
-        ranges[0] = 1;
-        ranges[1] = 1340;
-        ranges[2] = 2942;
-        ranges[3] = 5091;
-        ranges[4] = 9161;
-        ranges[5] = 10000;
-        uint128[] memory coefficients = new uint128[](6);//[uint128(1000000000000000),uint128(1000000000000000),uint128(2000000000000000)];
-        coefficients[0] = 1000000000000000;
-        coefficients[1] = 23863899643421;
-        coefficients[2] = 18753391400637;
-        coefficients[3] = 10512971063653;
-        coefficients[4] = 3046442261674;
-        coefficients[5] = 817720774556;
-        tape.updateBondingCurveParams(
-            // newCurrencyToken, newFeeModel, newTapeModel, newTapeOwnershipModelAddress, newTapeBondingCurveModelAddress, newMaxSupply, stepRangesMax, stepCoefficients
-            address(0), //currencyAddress,
-            Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY),
-            Create2.computeAddress(SALT, keccak256(tapeModelCode),DEPLOY_FACTORY),
-            ownershipModelAddress,
-            Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
-            10000, // max supply
-            ranges,
-            coefficients
-        );
-
         if (!tape.dappAddresses(dappAddress)) {
             console.logString("Adding dapp address");
-            tape.addDapp(dappAddress);
+            tape.setDapp(dappAddress,true);
         }
 
         console.logString("Setting uri");
@@ -97,6 +70,14 @@ contract SECP256K1_ORDERetupTape is Script {
             OwnershipModel(ownershipModelAddress).transferOwnership(operatorAddress);
         }
 
+        // only on vanguard 4
+        if (OwnershipModel(ownershipModelAddress).worldAddress() != worldAddress) {
+            console.logString("Setting the worldAddress of ownership model from - to");
+            console.logAddress(OwnershipModel(ownershipModelAddress).worldAddress());
+            console.logAddress(worldAddress);
+            OwnershipModel(ownershipModelAddress).setWorldAddress(worldAddress);
+        }
+
         if (tape.owner() != operatorAddress && tape.owner() == tx.origin) {
             console.logString("Transfering ownership of tape from - to");
             console.logAddress(tape.owner());
@@ -104,6 +85,38 @@ contract SECP256K1_ORDERetupTape is Script {
             tape.transferOwnership(operatorAddress);
         }
         
+        console.logString("Updating bonding curve params");
+
+        // uint256[] memory ranges =  new uint256[](6); //[1,5,1000];
+        // ranges[0] = 1;
+        // ranges[1] = 1340;
+        // ranges[2] = 2942;
+        // ranges[3] = 5091;
+        // ranges[4] = 9161;
+        // ranges[5] = 10000;
+        // uint256[] memory coefficients = new uint256[](6);//[uint256(1000000000000000),uint256(1000000000000000),uint256(2000000000000000)];
+        // coefficients[0] = 1000000000000000;
+        // coefficients[1] = 23863899643421;
+        // coefficients[2] = 18753391400637;
+        // coefficients[3] = 10512971063653;
+        // coefficients[4] = 3046442261674;
+        // coefficients[5] = 817720774556;
+
+        uint256[] memory ranges =  new uint256[](1); //[1,5,1000];
+        ranges[0] = 10;
+        uint256[] memory coefficients = new uint256[](1);//[uint256(1000000000000000),uint256(1000000000000000),uint256(2000000000000000)];
+        coefficients[0] = 0;
+        tape.updateBondingCurveParams(
+            currencyAddress,
+            Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY),
+            Create2.computeAddress(SALT, keccak256(tapeModelCode),DEPLOY_FACTORY),
+            ownershipModelAddress,
+            Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
+            10000, // max supply
+            ranges,
+            coefficients
+        );
+
         vm.stopBroadcast();
     }
     
