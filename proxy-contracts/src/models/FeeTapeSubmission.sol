@@ -71,8 +71,10 @@ contract FeeTapeSubmission is ITapeSubmission, Ownable {
     (address token, uint256 fee) = abi.decode(config,(address,uint256));
 
     if (token != address(0)) {
-        if (!ERC20(token).transferFrom(sender, cartridgeOwner, fee))
-            revert TapeSubmission__CannotSubmit("Couldn't transfer");
+        if (sender != cartridgeOwner) {
+          if (!ERC20(token).transferFrom(sender, cartridgeOwner, fee))
+              revert TapeSubmission__CannotSubmit("Couldn't transfer");
+        }
     } else {
         if (address(this).balance < value) revert TapeSubmission__CannotSubmit("Invalid value");
         if (address(this).balance < fee) revert TapeSubmission__CannotSubmit("Insufficient value");

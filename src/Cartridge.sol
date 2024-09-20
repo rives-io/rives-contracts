@@ -128,12 +128,12 @@ contract Cartridge is ERC1155, Ownable {
     //     }
     // }
 
-    function _createCartridgeBond(bytes32 id, uint256 bondFeeConfig, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation, address creator) internal {
+    function _createCartridgeBond(bytes32 id, uint256 bondFeeConfig, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation, address creator, address token) internal {
         if(cartridgeBonds[id].bond.steps.length == 0) {
             CartridgeBondUtils.CartridgeBond storage newCartridgeBond = cartridgeBonds[id];
             newCartridgeBond.feeModel = feeModelAddress;
             newCartridgeBond.feeConfig = bondFeeConfig;
-            newCartridgeBond.bond.currencyToken = currencyTokenAddress;
+            newCartridgeBond.bond.currencyToken = token;
             newCartridgeBond.cartridgeModel = cartridgeModelAddress;
             for (uint256 i = 0; i < steps.length; ++i) {
                 newCartridgeBond.bond.steps.push(IBondingCurveModel.BondingCurveStep({
@@ -456,15 +456,18 @@ contract Cartridge is ERC1155, Ownable {
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
         bool creatorAllocation,
-        address creator) public _checkCartridgeOwner(cartridgeId) {
+        address creator,
+        address token) public _checkCartridgeOwner(cartridgeId) {
 
         IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(cartridgeBondingCurveModelAddress).validateBondingCurve(cartridgeId,stepRangesMax,stepCoefficients,maxSupply);
 
-        _createCartridgeBond(cartridgeId,bondFeeConfig,steps,creatorAllocation,creator);
+        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCurrencyToken(token);
+
+        _createCartridgeBond(cartridgeId,bondFeeConfig,steps,creatorAllocation,creator,token);
     }
 
     function setCartridgeParams(bytes32 cartridgeId) public _checkCartridgeOwner(cartridgeId) {
-        _createCartridgeBond(cartridgeId,feeConfig,bondingCurveSteps,false,address(0));
+        _createCartridgeBond(cartridgeId,feeConfig,bondingCurveSteps,false,address(0),currencyTokenAddress);
     }
 
     function validateCartridgeCustom(
@@ -476,9 +479,10 @@ contract Cartridge is ERC1155, Ownable {
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
         bool creatorAllocation,
-        address creator) external returns (bytes32) {
+        address creator,
+        address token) external returns (bytes32) {
 
-        setCartridgeParamsCustom(cartridgeId,bondFeeConfig,stepRangesMax,stepCoefficients,creatorAllocation,creator);
+        setCartridgeParamsCustom(cartridgeId,bondFeeConfig,stepRangesMax,stepCoefficients,creatorAllocation,creator,token);
 
         return _validateCartridge(dapp,cartridgeId,_payload,_v);
     }

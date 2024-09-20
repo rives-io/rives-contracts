@@ -126,11 +126,11 @@ contract Tape is ERC1155, Ownable {
     //     }
     // }
 
-    function _createTapeBond(bytes32 id, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation,address creator) internal {
+    function _createTapeBond(bytes32 id, IBondingCurveModel.BondingCurveStep[] memory steps, bool creatorAllocation,address creator, address token) internal {
         if(tapeBonds[id].bond.steps.length == 0) {
             TapeBondUtils.TapeBond storage newTapeBond = tapeBonds[id];
             newTapeBond.feeModel = feeModelAddress;
-            newTapeBond.bond.currencyToken = currencyTokenAddress;
+            newTapeBond.bond.currencyToken = token;
             newTapeBond.tapeModel = tapeModelAddress;
             for (uint256 i = 0; i < steps.length; ++i) {
                 newTapeBond.bond.steps.push(IBondingCurveModel.BondingCurveStep({
@@ -529,15 +529,18 @@ contract Tape is ERC1155, Ownable {
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
         bool creatorAllocation,
-        address creator) public _checkTapeOwner(tapeId) {
+        address creator,
+        address token) public _checkTapeOwner(tapeId) {
 
         IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(tapeBondingCurveModelAddress).validateBondingCurve(tapeId,stepRangesMax,stepCoefficients,maxSupply);
 
-        _createTapeBond(tapeId,steps,creatorAllocation,creator);
+        TapeBondUtils(tapeBondUtilsAddress).verifyCurrencyToken(token);
+        
+        _createTapeBond(tapeId,steps,creatorAllocation,creator,token);
     }
 
     function setTapeParams(bytes32 tapeId) public _checkTapeOwner(tapeId) {
-        _createTapeBond(tapeId,bondingCurveSteps,false,address(0));
+        _createTapeBond(tapeId,bondingCurveSteps,false,address(0),currencyTokenAddress);
     }
 
     function validateTapeCustom(
@@ -548,9 +551,10 @@ contract Tape is ERC1155, Ownable {
         uint256[] memory stepRangesMax, 
         uint256[] memory stepCoefficients,
         bool creatorAllocation,
-        address creator) external returns (bytes32) {
+        address creator,
+        address token) external returns (bytes32) {
 
-        setTapeParamsCustom(tapeId,stepRangesMax,stepCoefficients,creatorAllocation,creator);
+        setTapeParamsCustom(tapeId,stepRangesMax,stepCoefficients,creatorAllocation,creator,token);
 
         return _validateTape(dapp,tapeId,_payload,_v);
     }
