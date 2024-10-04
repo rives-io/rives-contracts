@@ -1,15 +1,22 @@
 # Rives Contracts
 
+## Instructions
 
-## Build and deploy
+### Format
+
+```shell
+forge fmt
+```
+
+### Build and deploy
 
 ```shell
 make deploy
 ```
 
-## Build and deploy on a specific chain
+### Build and deploy on a specific chain
 
-Create a `.env.<chain>` file with the following parameters: 
+Create a `.env.<chain>` file with the following parameters:
 
 ```
 PRIVATE_KEY=
@@ -23,7 +30,7 @@ CARTRIDGE_ASSET_ADDRESS=
 TAPE_ASSET_ADDRESS=
 ```
 
-and run 
+and run
 
 ```shell
 make deploy-<chain>
