@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.8.24;
 
-import { Script,console } from "forge-std/src/Script.sol";
+import {Script, console} from "forge-std/src/Script.sol";
 
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-
-import { TapeFeeModel } from "../src/TapeFeeModel.sol";
-import { TapeModel } from "../src/TapeModel.sol";
-import { TapeOwnershipModelWithProxy as OwnershipModel } from "../src/TapeOwnershipModelWithProxy.sol";
-import { BondingCurveModel } from "../src/BondingCurveModel.sol";
-import { TapeBondUtils } from "../src/TapeBondUtils.sol";
-import { Tape } from "../src/Tape.sol";
-
+import {TapeFeeModel} from "../src/TapeFeeModel.sol";
+import {TapeModel} from "../src/TapeModel.sol";
+import {TapeOwnershipModelWithProxy as OwnershipModel} from "../src/TapeOwnershipModelWithProxy.sol";
+import {BondingCurveModel} from "../src/BondingCurveModel.sol";
+import {TapeBondUtils} from "../src/TapeBondUtils.sol";
+import {Tape} from "../src/Tape.sol";
 
 contract SetupTape is Script {
     address constant DEPLOY_FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
     bytes32 constant SALT = bytes32(0);
+
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address dappAddress = vm.envAddress("DAPP_ADDRESS");
@@ -26,44 +25,49 @@ contract SetupTape is Script {
 
         console.logString("Setup Tape Contracts");
 
-        // Currency 
+        // Currency
         address currencyAddress = address(0);
 
-        // Tape Fee Model 
-        bytes memory feeModelCode = abi.encodePacked(type(TapeFeeModel).creationCode);        
-        
-        // Tape Model 
+        // Tape Fee Model
+        bytes memory feeModelCode = abi.encodePacked(type(TapeFeeModel).creationCode);
+
+        // Tape Model
         bytes memory tapeModelCode = abi.encodePacked(type(TapeModel).creationCode);
-        
-        // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode,abi.encode(operatorAddress));
-        address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
-        
-        // Bonding Curve Model 
+
+        // Ownership Model
+        bytes memory ownershipModelCode =
+            abi.encodePacked(type(OwnershipModel).creationCode, abi.encode(operatorAddress));
+        address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode), DEPLOY_FACTORY);
+
+        // Bonding Curve Model
         bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModel).creationCode);
-        
+
         // Tape Bond Utils
         bytes memory tapeBondUtilsCode = abi.encodePacked(type(TapeBondUtils).creationCode);
 
         // Tape
-        bytes memory tapeCode = abi.encodePacked(type(Tape).creationCode,
+        bytes memory tapeCode = abi.encodePacked(
+            type(Tape).creationCode,
             abi.encode(
                 operatorAddress,
-                Create2.computeAddress(SALT, keccak256(tapeBondUtilsCode),DEPLOY_FACTORY),
+                Create2.computeAddress(SALT, keccak256(tapeBondUtilsCode), DEPLOY_FACTORY),
                 100 // max steps
             )
         );
-        Tape tape = Tape(Create2.computeAddress(SALT, keccak256(tapeCode),DEPLOY_FACTORY));
+        Tape tape = Tape(Create2.computeAddress(SALT, keccak256(tapeCode), DEPLOY_FACTORY));
 
         if (!tape.dappAddresses(dappAddress)) {
             console.logString("Adding dapp address");
-            tape.setDapp(dappAddress,true);
+            tape.setDapp(dappAddress, true);
         }
 
         console.logString("Setting uri");
         tape.setURI("https://vanguard.rives.io/tapes/{id}");
 
-        if (OwnershipModel(ownershipModelAddress).owner() != operatorAddress && OwnershipModel(ownershipModelAddress).owner() == tx.origin) {
+        if (
+            OwnershipModel(ownershipModelAddress).owner() != operatorAddress
+                && OwnershipModel(ownershipModelAddress).owner() == tx.origin
+        ) {
             console.logString("Transfering ownership of ownership model from - to");
             console.logAddress(OwnershipModel(ownershipModelAddress).owner());
             console.logAddress(operatorAddress);
@@ -84,7 +88,7 @@ contract SetupTape is Script {
             console.logAddress(operatorAddress);
             tape.transferOwnership(operatorAddress);
         }
-        
+
         console.logString("Updating bonding curve params");
 
         // uint256[] memory ranges =  new uint256[](6); //[1,5,1000];
@@ -102,16 +106,16 @@ contract SetupTape is Script {
         // coefficients[4] = 3046442261674;
         // coefficients[5] = 817720774556;
 
-        uint256[] memory ranges =  new uint256[](1); //[1,5,1000];
+        uint256[] memory ranges = new uint256[](1); //[1,5,1000];
         ranges[0] = 10;
-        uint256[] memory coefficients = new uint256[](1);//[uint256(1000000000000000),uint256(1000000000000000),uint256(2000000000000000)];
+        uint256[] memory coefficients = new uint256[](1); //[uint256(1000000000000000),uint256(1000000000000000),uint256(2000000000000000)];
         coefficients[0] = 0;
         tape.updateBondingCurveParams(
             currencyAddress,
-            Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY),
-            Create2.computeAddress(SALT, keccak256(tapeModelCode),DEPLOY_FACTORY),
+            Create2.computeAddress(SALT, keccak256(feeModelCode), DEPLOY_FACTORY),
+            Create2.computeAddress(SALT, keccak256(tapeModelCode), DEPLOY_FACTORY),
             ownershipModelAddress,
-            Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY),
+            Create2.computeAddress(SALT, keccak256(bcModelCode), DEPLOY_FACTORY),
             10000, // max supply
             ranges,
             coefficients
@@ -119,7 +123,6 @@ contract SetupTape is Script {
 
         vm.stopBroadcast();
     }
-    
 }
 
 // # tape asset
@@ -130,4 +133,3 @@ contract SetupTape is Script {
 // COEFS="[1000000000000000,1000000000000000,2000000000000000]"
 
 // ARGS="$OPERATOR $MAX_STEPS $CURRENCY_TOKEN $TAPE_FEE_MODEL $TAPE_MODEL $OWNERSHIP_MODEL $BC_MODEL $TAPE_BOND_UTILS $MAX_SUPPLY $RANGES $COEFS"
-

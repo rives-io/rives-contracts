@@ -11,9 +11,12 @@ interface IBondingCurveModel {
 
     function validateBondingCurve(
         bytes32 id,
-        uint256[] memory stepRangesMax, 
-        uint256[] memory stepCoefficients, uint256 newMaxSupply) external pure returns(BondingCurveStep[] memory) ;
+        uint256[] memory stepRangesMax,
+        uint256[] memory stepCoefficients,
+        uint256 newMaxSupply
+    ) external pure returns (BondingCurveStep[] memory);
 
-    function validateBondParams(uint256 maxSteps, uint256[] memory stepRangesMax, uint256[] memory stepCoefficients) pure external ;
-
+    function validateBondParams(uint256 maxSteps, uint256[] memory stepRangesMax, uint256[] memory stepCoefficients)
+        external
+        pure;
 }

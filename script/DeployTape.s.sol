@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.8.24;
 
-import { Script,console } from "forge-std/src/Script.sol";
+import {Script, console} from "forge-std/src/Script.sol";
 
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-
-import { TapeFeeModel } from "../src/TapeFeeModel.sol";
-import { TapeModel } from "../src/TapeModel.sol";
-import { TapeOwnershipModelWithProxy as OwnershipModel } from "../src/TapeOwnershipModelWithProxy.sol";
-import { BondingCurveModel } from "../src/BondingCurveModel.sol";
-import { TapeBondUtils } from "../src/TapeBondUtils.sol";
-import { Tape } from "../src/Tape.sol";
-
+import {TapeFeeModel} from "../src/TapeFeeModel.sol";
+import {TapeModel} from "../src/TapeModel.sol";
+import {TapeOwnershipModelWithProxy as OwnershipModel} from "../src/TapeOwnershipModelWithProxy.sol";
+import {BondingCurveModel} from "../src/BondingCurveModel.sol";
+import {TapeBondUtils} from "../src/TapeBondUtils.sol";
+import {Tape} from "../src/Tape.sol";
 
 contract DeployTape is Script {
     address constant DEPLOY_FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
     bytes32 constant SALT = bytes32(0);
+
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address operatorAddress = vm.envAddress("OPERATOR_ADDRESS");
@@ -25,9 +24,9 @@ contract DeployTape is Script {
 
         console.logString("Deploying Tape Contracts");
 
-        // Tape Fee Model 
+        // Tape Fee Model
         bytes memory feeModelCode = abi.encodePacked(type(TapeFeeModel).creationCode);
-        address feeModelAddress = Create2.computeAddress(SALT, keccak256(feeModelCode),DEPLOY_FACTORY);
+        address feeModelAddress = Create2.computeAddress(SALT, keccak256(feeModelCode), DEPLOY_FACTORY);
         console.logString("Expected feeModelAddress");
         console.logAddress(feeModelAddress);
         if (checkSize(feeModelAddress) == 0) {
@@ -37,10 +36,10 @@ contract DeployTape is Script {
         } else {
             console.logString("Already deployed feeModelAddress");
         }
-        
-        // Tape Model 
+
+        // Tape Model
         bytes memory tapeModelCode = abi.encodePacked(type(TapeModel).creationCode);
-        address tapeModelAddress = Create2.computeAddress(SALT, keccak256(tapeModelCode),DEPLOY_FACTORY);
+        address tapeModelAddress = Create2.computeAddress(SALT, keccak256(tapeModelCode), DEPLOY_FACTORY);
         console.logString("Expected tapeModelAddress");
         console.logAddress(tapeModelAddress);
         if (checkSize(tapeModelAddress) == 0) {
@@ -50,10 +49,11 @@ contract DeployTape is Script {
         } else {
             console.logString("Already deployed tapeModelAddress");
         }
-        
-        // Ownership Model 
-        bytes memory ownershipModelCode = abi.encodePacked(type(OwnershipModel).creationCode,abi.encode(operatorAddress));
-        address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode),DEPLOY_FACTORY);
+
+        // Ownership Model
+        bytes memory ownershipModelCode =
+            abi.encodePacked(type(OwnershipModel).creationCode, abi.encode(operatorAddress));
+        address ownershipModelAddress = Create2.computeAddress(SALT, keccak256(ownershipModelCode), DEPLOY_FACTORY);
         console.logString("Expected ownershipModelAddress");
         console.logAddress(ownershipModelAddress);
         if (checkSize(ownershipModelAddress) == 0) {
@@ -64,10 +64,9 @@ contract DeployTape is Script {
             console.logString("Already deployed ownershipModelAddress");
         }
 
-        
-        // Bonding Curve Model 
+        // Bonding Curve Model
         bytes memory bcModelCode = abi.encodePacked(type(BondingCurveModel).creationCode);
-        address bcModelAddress = Create2.computeAddress(SALT, keccak256(bcModelCode),DEPLOY_FACTORY);
+        address bcModelAddress = Create2.computeAddress(SALT, keccak256(bcModelCode), DEPLOY_FACTORY);
         console.logString("Expected bcModelAddress");
         console.logAddress(bcModelAddress);
         if (checkSize(bcModelAddress) == 0) {
@@ -77,10 +76,10 @@ contract DeployTape is Script {
         } else {
             console.logString("Already deployed bcModelAddress");
         }
-        
+
         // Tape Bond Utils
         bytes memory tapeBondUtilsCode = abi.encodePacked(type(TapeBondUtils).creationCode);
-        address tapeBondUtilsAddress = Create2.computeAddress(SALT, keccak256(tapeBondUtilsCode),DEPLOY_FACTORY);
+        address tapeBondUtilsAddress = Create2.computeAddress(SALT, keccak256(tapeBondUtilsCode), DEPLOY_FACTORY);
         console.logString("Expected tapeBondUtilsAddress");
         console.logAddress(tapeBondUtilsAddress);
         if (checkSize(tapeBondUtilsAddress) == 0) {
@@ -90,16 +89,17 @@ contract DeployTape is Script {
         } else {
             console.logString("Already deployed tapeBondUtilsAddress");
         }
-        
+
         // Tape
-        bytes memory tapeCode = abi.encodePacked(type(Tape).creationCode,
+        bytes memory tapeCode = abi.encodePacked(
+            type(Tape).creationCode,
             abi.encode(
                 operatorAddress,
                 tapeBondUtilsAddress,
                 100 // max steps
             )
         );
-        address tapeAddress = Create2.computeAddress(SALT, keccak256(tapeCode),DEPLOY_FACTORY);
+        address tapeAddress = Create2.computeAddress(SALT, keccak256(tapeCode), DEPLOY_FACTORY);
         console.logString("Expected tapeAddress");
         console.logAddress(tapeAddress);
         if (checkSize(tapeAddress) == 0) {
@@ -117,12 +117,11 @@ contract DeployTape is Script {
         vm.stopBroadcast();
     }
 
-    function checkSize(address addr) public view returns(uint extSize) {
+    function checkSize(address addr) public view returns (uint256 extSize) {
         assembly {
             extSize := extcodesize(addr) // returns 0 if EOA, >0 if smart contract
         }
     }
-    
 }
 
 // # tape asset
@@ -133,4 +132,3 @@ contract DeployTape is Script {
 // COEFS="[1000000000000000,1000000000000000,2000000000000000]"
 
 // ARGS="$OPERATOR $MAX_STEPS $CURRENCY_TOKEN $TAPE_FEE_MODEL $TAPE_MODEL $OWNERSHIP_MODEL $BC_MODEL $TAPE_BOND_UTILS $MAX_SUPPLY $RANGES $COEFS"
-
