@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
 import "@cartesi/rollups/contracts/library/LibOutputValidation.sol";
-import "./ITapeFeeModel.sol";
-import "./ITapeModel.sol";
-import "./IOwnershipModel.sol";
-import "./IBondingCurveModel.sol";
+import "@interfaces/ITapeFeeModel.sol";
+import "@interfaces/ITapeModel.sol";
+import "@interfaces/IOwnershipModel.sol";
+import "@interfaces/IBondingCurveModel.sol";
 import "./TapeBondUtils.sol";
 import "./BondUtils.sol";
 

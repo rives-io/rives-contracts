@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import "./ITapeFeeModel.sol";
-import "./ITapeModel.sol";
-import "./IOwnershipModel.sol";
-import "./IBondingCurveModel.sol";
+import "@interfaces/ITapeFeeModel.sol";
+import "@interfaces/ITapeModel.sol";
+import "@interfaces/IOwnershipModel.sol";
+import "@interfaces/IBondingCurveModel.sol";
 import "./BondUtils.sol";
 
 contract TapeBondUtils is BondUtils {

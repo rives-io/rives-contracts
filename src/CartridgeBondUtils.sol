@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import "./ICartridgeFeeModel.sol";
-import "./ICartridgeModel.sol";
-import "./IOwnershipModel.sol";
-import "./IBondingCurveModel.sol";
+import "@interfaces/ICartridgeFeeModel.sol";
+import "@interfaces/ICartridgeModel.sol";
+import "@interfaces/IOwnershipModel.sol";
+import "@interfaces/IBondingCurveModel.sol";
 import "./BondUtils.sol";
 
 contract CartridgeBondUtils is BondUtils {

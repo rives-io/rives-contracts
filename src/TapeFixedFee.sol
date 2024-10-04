@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
-import "./ITapeFeeModel.sol";
+import "@interfaces/ITapeFeeModel.sol";
 
 contract TapeFixedFee is ITapeFeeModel {
     uint256 constant cartridgeOwnerFee = 1000;

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import "./IOwnershipModel.sol";
-import "./IBondingCurveModel.sol";
+import "@interfaces/IOwnershipModel.sol";
+import "@interfaces/IBondingCurveModel.sol";
 
 contract BondUtils {
     error Bond__InvalidCurrencyToken(string reason);
