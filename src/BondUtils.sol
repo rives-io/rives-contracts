@@ -122,7 +122,7 @@ contract BondUtils {
         uint256 currentSupply = bond.currentSupply + bond.count.consumed;
 
         if (
-            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff - tokensToMint < currentSupply
+            type(uint256).max - tokensToMint < currentSupply
                 || currentSupply + tokensToMint > bond.steps[bond.steps.length - 1].rangeMax
         ) revert Bond__ExceedSupply();
 
@@ -218,7 +218,7 @@ contract BondUtils {
         uint256 currentConsumed = bond.count.consumed;
 
         if (
-            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff - tokensToConsume < currentConsumed
+            type(uint256).max - tokensToConsume < currentConsumed
                 || tokensToConsume + currentConsumed > bond.currentSupply
         ) revert Bond__ExceedSupply();
 
