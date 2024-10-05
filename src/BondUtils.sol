@@ -257,6 +257,7 @@ contract BondUtils {
         currencyAmount = currencyAmountToBond;
     }
 
+    // XXX TODO change to bitwise operators
     function toHex(bytes memory buffer) public pure returns (string memory) {
         bytes memory converted = new bytes(buffer.length * 2);
         bytes memory _base = "0123456789abcdef";
