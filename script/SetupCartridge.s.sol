@@ -5,10 +5,10 @@ import {Script, console} from "forge-std/src/Script.sol";
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {CartridgeFeeModel} from "../src/CartridgeFeeModel.sol";
-import {CartridgeModel} from "../src/CartridgeModel.sol";
-import {CartridgeOwnershipModelWithProxy as OwnershipModel} from "../src/CartridgeOwnershipModelWithProxy.sol";
-import {BondingCurveModel} from "../src/BondingCurveModel.sol";
+import {CartridgeFeeModel} from "@models/CartridgeFeeModel.sol";
+import {CartridgeModel} from "@models/CartridgeModel.sol";
+import {CartridgeOwnershipModelWithProxy as OwnershipModel} from "@models/CartridgeOwnershipModelWithProxy.sol";
+import {BondingCurveModel} from "@models/BondingCurveModel.sol";
 import {CartridgeBondUtils} from "../src/CartridgeBondUtils.sol";
 import {Cartridge} from "../src/Cartridge.sol";
 

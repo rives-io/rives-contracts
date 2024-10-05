@@ -5,10 +5,10 @@ import {Script, console} from "forge-std/src/Script.sol";
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-import {TapeFeeModel} from "../src/TapeFeeModel.sol";
-import {TapeModel} from "../src/TapeModel.sol";
-import {TapeOwnershipModelWithProxy as OwnershipModel} from "../src/TapeOwnershipModelWithProxy.sol";
-import {BondingCurveModel} from "../src/BondingCurveModel.sol";
+import {TapeFeeModel} from "@models/TapeFeeModel.sol";
+import {TapeModel} from "@models/TapeModel.sol";
+import {TapeOwnershipModelWithProxy as OwnershipModel} from "@models/TapeOwnershipModelWithProxy.sol";
+import {BondingCurveModel} from "@models/BondingCurveModel.sol";
 import {TapeBondUtils} from "../src/TapeBondUtils.sol";
 import {Tape} from "../src/Tape.sol";
 
