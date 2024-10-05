@@ -63,7 +63,6 @@ contract BondUtils {
 
     // Aux/validation methods
     function verifyCurrencyToken(address newCurrencyToken) public view {
-        // if (newCurrencyToken == address(0)) revert Bond__InvalidCurrencyToken('address');
         // Accept base layer token as address 0
         if (newCurrencyToken == address(0)) return;
 
