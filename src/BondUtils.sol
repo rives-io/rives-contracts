@@ -7,19 +7,10 @@ import "@interfaces/IBondingCurveModel.sol";
 
 contract BondUtils {
     error Bond__InvalidCurrencyToken(string reason);
-    // error Bond__InsufficientFunds();
-    // error Bond__ChangeError();
-    // error Bond__InvalidFeeModel(string reason);
     error Bond__InvalidOwnershipModel(string reason);
-    // error Bond__NotFound();
-    // error Bond__InvalidUser();
     error Bond__InvalidCurrentSupply();
     error Bond__InvalidAmount();
-    // error Bond__InvalidDapp();
     error Bond__ExceedSupply();
-    // error Bond__InvalidReceiver();
-    // error Bond__SlippageLimitExceeded();
-    // error Bond__InvalidOwner();
 
     event Buy(bytes32 indexed id, address indexed user, uint256 amountMinted, uint256 pricePayed);
     event Sell(bytes32 indexed id, address indexed user, uint256 amountBurned, uint256 refundReceived);
@@ -56,7 +47,6 @@ contract BondUtils {
 
     struct BondData {
         address currencyToken; // immutable
-        // mapping (uint8 => BondingCurveStep) steps; // immutable
         IBondingCurveModel.BondingCurveStep[] steps; // immutable
         uint256 currencyBalance;
         uint256 currentSupply;

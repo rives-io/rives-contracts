@@ -3,8 +3,6 @@ pragma solidity >=0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-// import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-// import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
 import "@cartesi/rollups/contracts/library/LibOutputValidation.sol";
@@ -35,7 +33,7 @@ contract Cartridge is ERC1155, Ownable {
     // Constants
     uint256 private immutable MAX_STEPS;
 
-    // base URI
+    // Base URI
     string private _baseURI = "";
 
     // Default parameters
@@ -57,48 +55,18 @@ contract Cartridge is ERC1155, Ownable {
     // Accounts
     mapping(address => mapping(address => uint256)) public accounts; // user -> token -> amount
 
-    // dapps
+    // Dapps
     mapping(address => bool) public dappAddresses; // user -> token -> amount
-    // address[] public dappAddresses;
 
     // Constructor
     constructor(address ownerAddress, address newCartridgeBondUtilsAddress, uint256 maxSteps)
-        // address newProtocolWallet,
-        // uint256 maxSteps,
-        // address newCurrencyToken,
-        // address newFeeModel,
-        // address newCartridgeModel,
-        // address newCartridgeOwnershipModelAddress,
-        // address newCartridgeBondingCurveModelAddress,
-        // address newCartridgeBondUtilsAddress,
-        // uint256 newMaxSupply,
-        // uint256[] memory stepRangesMax,
-        // uint256[] memory stepCoefficients
         Ownable(ownerAddress)
         ERC1155("")
     {
         protocolWallet = ownerAddress;
-
         MAX_STEPS = maxSteps;
-
         cartridgeBondUtilsAddress = newCartridgeBondUtilsAddress;
-
-        // _updateBondingCurveParams(
-        //     newCurrencyToken,
-        //     newFeeModel,
-        //     newCartridgeModel,
-        //     newCartridgeOwnershipModelAddress,
-        //     newCartridgeBondingCurveModelAddress,
-        //     newMaxSupply,
-        //     stepRangesMax,
-        //     stepCoefficients);
     }
-
-    // create bond
-    // modifier _checkAndCreateCartridgeBond(bytes32 id) {
-    //     _createCartridgeBond(id);
-    //     _;
-    // }
 
     modifier _checkCartridgeBond(bytes32 id) {
         if (cartridgeBonds[id].bond.steps.length == 0) {
@@ -113,22 +81,6 @@ contract Cartridge is ERC1155, Ownable {
         }
         _;
     }
-
-    // function _createCartridgeBond(bytes32 id) internal {
-    //     if(cartridgeBonds[id].steps.length == 0) {
-    //         CartridgeBondUtils.CartridgeBond storage newCartridgeBond = cartridgeBonds[id];
-    //         newCartridgeBond.feeModel = feeModelAddress;
-    //         newCartridgeBond.currencyToken = currencyTokenAddress;
-    //         newCartridgeBond.cartridgeModel = cartridgeModelAddress;
-    //         for (uint256 i = 0; i < bondingCurveSteps.length; ++i) {
-    //             newCartridgeBond.steps.push(IBondingCurveModel.BondingCurveStep({
-    //                 rangeMax: bondingCurveSteps[i].rangeMax,
-    //                 coefficient: bondingCurveSteps[i].coefficient
-    //             }));
-    //         }
-    //         cartridgeBondsCreated.push(id);
-    //     }
-    // }
 
     function _createCartridgeBond(
         bytes32 id,
@@ -161,85 +113,6 @@ contract Cartridge is ERC1155, Ownable {
 
     // admin
 
-    function _updateBondingCurveParams(
-        address newCurrencyToken,
-        address newFeeModel,
-        address newCartridgeModel,
-        address newCartridgeOwnershipModelAddress,
-        address newCartridgeBondingCurveModelAddress,
-        uint256 newMaxSupply,
-        uint256 newFeeConfig,
-        uint256[] memory stepRangesMax,
-        uint256[] memory stepCoefficients
-    ) internal {
-        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCurrencyToken(newCurrencyToken);
-
-        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyFeeModel(newFeeModel);
-
-        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCartridgeModel(newCartridgeModel);
-
-        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyOwnershipModel(newCartridgeOwnershipModelAddress);
-
-        IBondingCurveModel(newCartridgeBondingCurveModelAddress).validateBondParams(
-            MAX_STEPS, stepRangesMax, stepCoefficients
-        );
-
-        // BondingCurveStep[] bondingCurveSteps;
-
-        // uint256 multiFactor = 10**IERC20Metadata(newCurrencyToken).decimals();
-
-        delete bondingCurveSteps;
-
-        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newCartridgeBondingCurveModelAddress)
-            .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
-        for (uint256 i = 0; i < steps.length; ++i) {
-            bondingCurveSteps.push(
-                IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
-            );
-        }
-        // for (uint256 i = 0; i < stepRangesMax.length; ++i) {
-        //     uint256 stepRangeMax = stepRangesMax[i];
-        //     uint256 stepCoefficient = stepCoefficients[i];
-
-        //     if (stepRangeMax == 0) {
-        //         revert CartridgeBondUtils.Cartridge__InvalidBondParams('STEP_CANNOT_BE_ZERO');
-        //     }
-        //     // else if (stepCoefficient > 0 && stepRangeMax * stepCoefficient < multiFactor) {
-        //     //     // To minimize rounding errors, the product of the range and coefficient must be at least multiFactor (1e18 for ERC20)
-        //     //     revert Cartridge__InvalidBondParams('STEP_RANGE_OR_PRICE_TOO_SMALL');
-        //     // }
-
-        //     bondingCurveSteps.push(IBondingCurveModel.BondingCurveStep({
-        //         rangeMax: uint256(stepRangeMax),
-        //         coefficient: uint256(stepCoefficient)
-        //     }));
-        // }
-        currencyTokenAddress = newCurrencyToken;
-
-        feeModelAddress = newFeeModel;
-
-        cartridgeModelAddress = newCartridgeModel;
-
-        cartridgeOwnershipModelAddress = newCartridgeOwnershipModelAddress;
-
-        cartridgeBondingCurveModelAddress = newCartridgeBondingCurveModelAddress;
-
-        maxSupply = newMaxSupply;
-
-        feeConfig = newFeeConfig;
-    }
-
-    function updateProtocolWallet(address newProtocolWallet) external {
-        if (_msgSender() != protocolWallet) revert Cartridge__InvalidUser();
-        protocolWallet = newProtocolWallet;
-    }
-
-    function setDapp(address dapp, bool active) external onlyOwner {
-        if (dappAddresses[dapp]) revert Cartridge__InvalidDapp();
-
-        dappAddresses[dapp] = active;
-    }
-
     function updateBondingCurveParams(
         address newCurrencyToken,
         address newFeeModel,
@@ -264,13 +137,59 @@ contract Cartridge is ERC1155, Ownable {
         );
     }
 
+    function _updateBondingCurveParams(
+        address newCurrencyToken,
+        address newFeeModel,
+        address newCartridgeModel,
+        address newCartridgeOwnershipModelAddress,
+        address newCartridgeBondingCurveModelAddress,
+        uint256 newMaxSupply,
+        uint256 newFeeConfig,
+        uint256[] memory stepRangesMax,
+        uint256[] memory stepCoefficients
+    ) internal {
+        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCurrencyToken(newCurrencyToken);
+        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyFeeModel(newFeeModel);
+        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCartridgeModel(newCartridgeModel);
+        CartridgeBondUtils(cartridgeBondUtilsAddress).verifyOwnershipModel(newCartridgeOwnershipModelAddress);
+
+        IBondingCurveModel(newCartridgeBondingCurveModelAddress).validateBondParams(
+            MAX_STEPS, stepRangesMax, stepCoefficients
+        );
+
+        delete bondingCurveSteps;
+
+        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newCartridgeBondingCurveModelAddress)
+            .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
+        for (uint256 i = 0; i < steps.length; ++i) {
+            bondingCurveSteps.push(
+                IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
+            );
+        }
+
+        currencyTokenAddress = newCurrencyToken;
+        feeModelAddress = newFeeModel;
+        cartridgeModelAddress = newCartridgeModel;
+        cartridgeOwnershipModelAddress = newCartridgeOwnershipModelAddress;
+        cartridgeBondingCurveModelAddress = newCartridgeBondingCurveModelAddress;
+        maxSupply = newMaxSupply;
+        feeConfig = newFeeConfig;
+    }
+
+    function updateProtocolWallet(address newProtocolWallet) external {
+        if (_msgSender() != protocolWallet) revert Cartridge__InvalidUser();
+        protocolWallet = newProtocolWallet;
+    }
+
+    function setDapp(address dapp, bool active) external onlyOwner {
+        if (dappAddresses[dapp]) revert Cartridge__InvalidDapp();
+
+        dappAddresses[dapp] = active;
+    }
+
     function setURI(string calldata newUri) external onlyOwner {
         _setURI(newUri);
     }
-
-    // function setBaseURI(string memory baseURI) public onlyOwner {
-    //     _baseURI = baseURI;
-    // }
 
     function changeCartridgeModel(bytes32 cartridgeId, address newCartridgeModel) external onlyOwner {
         if (cartridgeBonds[cartridgeId].bond.steps.length == 0) {
@@ -699,12 +618,6 @@ contract Cartridge is ERC1155, Ownable {
         }
     }
 
-    // Utility functions views
-
-    // function balance() external view returns (uint256) {
-    //     return address(this).balance;
-    // }
-
     function getCurrentBuyPrice(bytes32 cartridgeId, uint256 tokensToMint)
         external
         view
@@ -715,36 +628,12 @@ contract Cartridge is ERC1155, Ownable {
         }
         CartridgeBondUtils.CartridgeBond memory bond = cartridgeBonds[cartridgeId];
 
-        // CartridgeBondUtils.CartridgeBond memory bond = cartridgeBonds[cartridgeId].steps.length != 0 ?
-        //     cartridgeBonds[cartridgeId] :
-        //     CartridgeBondUtils.CartridgeBond({
-        //         feeModel:feeModelAddress,
-        //         cartridgeModel:cartridgeModelAddress,
-        //         currencyToken:currencyTokenAddress,
-        //         steps:bondingCurveSteps,
-        //         currencyBalance:0,
-        //         currentSupply:0,
-        //         currentPrice:0,
-        //         consumePrice:0,
-        //         unclaimed:CartridgeBondUtils.UnclaimedFees(0,0,0,0,0),
-        //         // unclaimedMintFees:0,
-        //         // unclaimedBurnFees:0,
-        //         // unclaimedRoyaltiesFees:0,
-        //         // undistributedRoyaltiesFees:0,
-        //         // totalMinted:0,
-        //         // totalBurned:0,
-        //         count:CartridgeBondUtils.BondCount(0,0,0),
-        //         // addresses: [address(0),address(0)],
-        //         cartridgeOwner:address(0),
-        //         cartridgeCreator:address(0),
-        //         cartridgeOutputData:""
-        //     });
-
         (uint256 currencyAmount, uint256 finalPrice) =
             CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutToMintTokens(tokensToMint, bond.bond);
 
         (uint256 protocolFee, uint256 cartridgeOwnerFee) =
             ICartridgeFeeModel(bond.feeModel).getMintFees(bond.feeConfig, tokensToMint, currencyAmount);
+
         uint256 fees = protocolFee + cartridgeOwnerFee;
 
         return (currencyAmount + fees, fees, finalPrice);
@@ -799,10 +688,6 @@ contract Cartridge is ERC1155, Ownable {
     function exists(bytes32 cartridgeId) external view returns (bool) {
         return cartridgeBonds[cartridgeId].bond.steps.length != 0;
     }
-
-    // function getSteps(bytes32 cartridgeId) external view returns (BondingCurveStep[] memory) {
-    //     return cartridgeBonds[cartridgeId].steps;
-    // }
 
     function maxCartridgeSupply(bytes32 cartridgeId) external view returns (uint256) {
         return cartridgeBonds[cartridgeId].bond.steps[cartridgeBonds[cartridgeId].bond.steps.length - 1].rangeMax;

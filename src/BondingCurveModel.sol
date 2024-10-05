@@ -19,7 +19,6 @@ contract BondingCurveModel is IBondingCurveModel {
         uint256 lastRangeMax;
         for (uint256 i = 0; i < stepRangesMax.length; ++i) {
             uint256 stepRangeMax = stepRangesMax[i];
-            uint256 stepCoefficient = stepCoefficients[i];
 
             if (stepRangeMax == 0) {
                 revert BC__InvalidBondParams("STEP_CANNOT_BE_ZERO");
@@ -27,12 +26,8 @@ contract BondingCurveModel is IBondingCurveModel {
             if (stepRangeMax <= lastRangeMax) {
                 revert BC__InvalidBondParams("STEP_CANNOT_BE_LESS_THAN_PREVIOUS");
             }
-            // else if (stepCoefficient > 0 && stepRangeMax * stepCoefficient < multiFactor) {
-            //     // To minimize rounding errors, the product of the range and coefficient must be at least multiFactor (1e18 for ERC20)
-            //     revert BC__InvalidBondParams('STEP_RANGE_OR_PRICE_TOO_SMALL');
-            // }
 
-            steps[i] = BondingCurveStep({rangeMax: uint256(stepRangeMax), coefficient: uint256(stepCoefficient)});
+            steps[i] = BondingCurveStep({rangeMax: stepRangeMax, coefficient: stepCoefficients[i]});
             lastRangeMax = stepRangeMax;
         }
 
