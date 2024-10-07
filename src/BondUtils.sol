@@ -130,6 +130,7 @@ contract BondUtils {
         uint256 currencyAmountToBond;
         uint256 supplyLeft;
         uint256 priceAfter = bond.currentPrice;
+        // XXX import change needs to be checked by lyno
         uint256 i = getCurrentStep(currentSupply, bond);
         for (i; i < steps.length; ++i) {
             IBondingCurveModel.BondingCurveStep memory step = steps[i];
