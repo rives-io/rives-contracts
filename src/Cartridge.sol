@@ -153,19 +153,27 @@ contract Cartridge is ERC1155, Ownable {
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCartridgeModel(newCartridgeModel);
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyOwnershipModel(newCartridgeOwnershipModelAddress);
 
+        // XXX model checking itself, gives no guarantees
         IBondingCurveModel(newCartridgeBondingCurveModelAddress).validateBondParams(
             MAX_STEPS, stepRangesMax, stepCoefficients
         );
 
         delete bondingCurveSteps;
 
-        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newCartridgeBondingCurveModelAddress)
-            .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
-        for (uint256 i = 0; i < steps.length; ++i) {
-            bondingCurveSteps.push(
-                IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
-            );
-        }
+        // XXX model checking itself, gives no guarantees
+        //IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newCartridgeBondingCurveModelAddress)
+        //    .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
+        //
+        //for (uint256 i = 0; i < steps.length; ++i) {
+        //    bondingCurveSteps.push(
+        //        IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
+        //    );
+        //}
+
+        // XXX check with lyno if this is OK
+        bondingCurveSteps = IBondingCurveModel(newCartridgeBondingCurveModelAddress).validateBondingCurve(
+            bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply
+        );
 
         currencyTokenAddress = newCurrencyToken;
         feeModelAddress = newFeeModel;
@@ -251,8 +259,6 @@ contract Cartridge is ERC1155, Ownable {
         bool creatorAllocation
     ) private _checkCartridgeBond(cartridgeId) returns (uint256 currencyCost) {
         // buy from bonding curve
-
-        // if (receiver == address(0)) revert Cartridge__InvalidReceiver();
         address payable user = payable(sender);
 
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
