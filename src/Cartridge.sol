@@ -252,15 +252,14 @@ contract Cartridge is ERC1155, Ownable {
     }
 
     function _buyCartridgesInternal(
-        address sender,
+        address buyer,
         bytes32 cartridgeId,
         uint256 cartridgesToMint,
         uint256 maxCurrencyPrice,
         bool creatorAllocation
     ) private _checkCartridgeBond(cartridgeId) returns (uint256 currencyCost) {
         // buy from bonding curve
-        address payable user = payable(sender);
-
+        address payable user = payable(buyer);
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
 
         (uint256 currencyAmount, uint256 finalPrice) =
