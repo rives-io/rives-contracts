@@ -8,7 +8,7 @@ contract CurrencyToken is ERC20 {
         _mint(msg.sender, 1000000000);
     }
 
-    function decimals() override public pure returns (uint8) {
+    function decimals() public pure override returns (uint8) {
         return 6;
     }
 }
