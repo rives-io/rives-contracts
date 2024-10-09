@@ -400,7 +400,6 @@ contract Cartridge is ERC1155, Ownable {
         _checkCartridgeBond(cartridgeId)
         returns (uint256)
     {
-        // if (receiver == address(0)) revert Cartridge__InvalidReceiver();
         address user = _msgSender();
 
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
