@@ -152,7 +152,6 @@ contract BondUtils {
                 tokensLeft = 0;
                 break;
             }
-            i++;
         }
 
         if (tokensLeft > 0) revert Bond__InvalidAmount();
