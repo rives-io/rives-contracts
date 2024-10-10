@@ -263,7 +263,7 @@ contract Cartridge is ERC1155, Ownable {
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
 
         (uint256 currencyAmount, uint256 finalPrice) =
-            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutToMintTokens(cartridgesToMint, bond.bond);
+            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmountToMintTokens(cartridgesToMint, bond.bond);
 
         // fees
         uint256 protocolFee;
@@ -337,7 +337,7 @@ contract Cartridge is ERC1155, Ownable {
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
 
         (uint256 currencyAmount, uint256 finalPrice) =
-            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutForBurningTokens(cartridgesToBurn, bond.bond);
+            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmountForBurningTokens(cartridgesToBurn, bond.bond);
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee) =
@@ -405,7 +405,7 @@ contract Cartridge is ERC1155, Ownable {
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
 
         (uint256 currencyAmount, uint256 finalPrice) = CartridgeBondUtils(cartridgeBondUtilsAddress)
-            .getCurrencyAmoutForConsumingTokens(cartridgesToConsume, bond.bond);
+            .getCurrencyAmountForConsumingTokens(cartridgesToConsume, bond.bond);
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee) =
@@ -633,7 +633,7 @@ contract Cartridge is ERC1155, Ownable {
         CartridgeBondUtils.CartridgeBond memory bond = cartridgeBonds[cartridgeId];
 
         (uint256 currencyAmount, uint256 finalPrice) =
-            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutToMintTokens(tokensToMint, bond.bond);
+            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmountToMintTokens(tokensToMint, bond.bond);
 
         (uint256 protocolFee, uint256 cartridgeOwnerFee) =
             ICartridgeFeeModel(bond.feeModel).getMintFees(bond.feeConfig, tokensToMint, currencyAmount);
@@ -653,7 +653,7 @@ contract Cartridge is ERC1155, Ownable {
         }
         CartridgeBondUtils.CartridgeBond memory bond = cartridgeBonds[cartridgeId];
         (uint256 currencyAmount, uint256 finalPrice) =
-            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tokensToBurn, bond.bond);
+            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmountForBurningTokens(tokensToBurn, bond.bond);
 
         (uint256 protocolFee, uint256 cartridgeOwnerFee) =
             ICartridgeFeeModel(bond.feeModel).getBurnFees(bond.feeConfig, tokensToBurn, currencyAmount);
@@ -671,8 +671,8 @@ contract Cartridge is ERC1155, Ownable {
             revert Cartridge__NotFound();
         }
         CartridgeBondUtils.CartridgeBond memory bond = cartridgeBonds[cartridgeId];
-        (uint256 currencyAmount, uint256 finalPrice) =
-            CartridgeBondUtils(cartridgeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(tokensToConsume, bond.bond);
+        (uint256 currencyAmount, uint256 finalPrice) = CartridgeBondUtils(cartridgeBondUtilsAddress)
+            .getCurrencyAmountForConsumingTokens(tokensToConsume, bond.bond);
         return (currencyAmount, finalPrice);
     }
 

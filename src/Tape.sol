@@ -441,7 +441,7 @@ contract Tape is ERC1155, Ownable {
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
         (uint256 currencyAmount, uint256 finalPrice) =
-            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutToMintTokens(tapesToMint, bond.bond);
+            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmountToMintTokens(tapesToMint, bond.bond);
 
         // fees
         uint256 protocolFee;
@@ -513,7 +513,7 @@ contract Tape is ERC1155, Ownable {
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
         (uint256 currencyAmount, uint256 finalPrice) =
-            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tapesToBurn, bond.bond);
+            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmountForBurningTokens(tapesToBurn, bond.bond);
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) =
@@ -576,7 +576,7 @@ contract Tape is ERC1155, Ownable {
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
 
         (uint256 currencyAmount, uint256 finalPrice) =
-            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(tapesToConsume, bond.bond);
+            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmountForConsumingTokens(tapesToConsume, bond.bond);
 
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) =
@@ -801,7 +801,7 @@ contract Tape is ERC1155, Ownable {
         //     });
 
         (uint256 currencyAmount, uint256 finalPrice) =
-            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutToMintTokens(tokensToMint, bond.bond);
+            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmountToMintTokens(tokensToMint, bond.bond);
 
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) =
             ITapeFeeModel(bond.feeModel).getMintFees(tokensToMint, currencyAmount);
@@ -818,7 +818,7 @@ contract Tape is ERC1155, Ownable {
         if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
         TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId];
         (uint256 currencyAmount, uint256 finalPrice) =
-            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForBurningTokens(tokensToBurn, bond.bond);
+            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmountForBurningTokens(tokensToBurn, bond.bond);
 
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) =
             ITapeFeeModel(bond.feeModel).getBurnFees(tokensToBurn, currencyAmount);
@@ -831,7 +831,7 @@ contract Tape is ERC1155, Ownable {
         if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
         TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId];
         (uint256 currencyAmount, uint256 finalPrice) =
-            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmoutForConsumingTokens(tokensToConsume, bond.bond);
+            TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmountForConsumingTokens(tokensToConsume, bond.bond);
         return (currencyAmount, finalPrice);
     }
 
