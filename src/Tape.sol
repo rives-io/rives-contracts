@@ -116,23 +116,18 @@ contract Tape is ERC1155, Ownable {
         uint256[] memory stepCoefficients
     ) internal {
         TapeBondUtils(tapeBondUtilsAddress).verifyCurrencyToken(newCurrencyToken);
-
         TapeBondUtils(tapeBondUtilsAddress).verifyFeeModel(newFeeModel);
-
         TapeBondUtils(tapeBondUtilsAddress).verifyTapeModel(newTapeModel);
-
         TapeBondUtils(tapeBondUtilsAddress).verifyOwnershipModel(newTapeOwnershipModelAddress);
 
+        // XXX model validating itself
         IBondingCurveModel(newTapeBondingCurveModelAddress).validateBondParams(
             MAX_STEPS, stepRangesMax, stepCoefficients
         );
 
-        // BondingCurveStep[] bondingCurveSteps;
-
-        // uint256 multiFactor = 10**IERC20Metadata(newCurrencyToken).decimals();
-
         delete bondingCurveSteps;
 
+        // XXX redundant loop I think
         IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newTapeBondingCurveModelAddress)
             .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
         for (uint256 i = 0; i < steps.length; ++i) {
@@ -140,33 +135,12 @@ contract Tape is ERC1155, Ownable {
                 IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
             );
         }
-        // for (uint256 i = 0; i < stepRangesMax.length; ++i) {
-        //     uint256 stepRangeMax = stepRangesMax[i];
-        //     uint256 stepCoefficient = stepCoefficients[i];
 
-        //     if (stepRangeMax == 0) {
-        //         revert TapeBondUtils.Tape__InvalidBondParams('STEP_CANNOT_BE_ZERO');
-        //     }
-        //     // else if (stepCoefficient > 0 && stepRangeMax * stepCoefficient < multiFactor) {
-        //     //     // To minimize rounding errors, the product of the range and coefficient must be at least multiFactor (1e18 for ERC20)
-        //     //     revert Tape__InvalidBondParams('STEP_RANGE_OR_PRICE_TOO_SMALL');
-        //     // }
-
-        //     bondingCurveSteps.push(IBondingCurveModel.BondingCurveStep({
-        //         rangeMax: uint256(stepRangeMax),
-        //         coefficient: uint256(stepCoefficient)
-        //     }));
-        // }
         currencyTokenAddress = newCurrencyToken;
-
         feeModelAddress = newFeeModel;
-
         tapeModelAddress = newTapeModel;
-
         tapeOwnershipModelAddress = newTapeOwnershipModelAddress;
-
         tapeBondingCurveModelAddress = newTapeBondingCurveModelAddress;
-
         maxSupply = newMaxSupply;
     }
 
@@ -207,10 +181,6 @@ contract Tape is ERC1155, Ownable {
         _setURI(newUri);
     }
 
-    // function setBaseURI(string memory baseURI) public onlyOwner {
-    //     _baseURI = baseURI;
-    // }
-
     function changeTapeModel(bytes32 tapeId, address newTapeModel) external onlyOwner {
         if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
         if (tapeBonds[tapeId].tapeOutputData.length > 0) {
@@ -219,11 +189,6 @@ contract Tape is ERC1155, Ownable {
         TapeBondUtils(tapeBondUtilsAddress).verifyTapeModel(newTapeModel);
         tapeBonds[tapeId].tapeModel = newTapeModel;
     }
-
-    // function updateTapeCreator(address token, address creator) external {
-    // if (bond.creator != _msgSender()) revert
-    // if (creator == address(0)) revert MCV2_Bond__InvalidCreatorAddress();
-    // function updateTapeCartridgeOwner(address token, address owner) external {
 
     // Fees functions
     function _distributeFees(bytes32 tapeId, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee)
@@ -386,8 +351,6 @@ contract Tape is ERC1155, Ownable {
         bool creatorAllocation
     ) private _checkTapeBond(tapeId) returns (uint256 currencyCost) {
         // buy from bonding curve
-
-        // if (receiver == address(0)) revert Tape__InvalidReceiver();
         address payable user = payable(sender);
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
@@ -715,10 +678,6 @@ contract Tape is ERC1155, Ownable {
 
     // Utility functions views
 
-    // function balance() external view returns (uint256) {
-    //     return address(this).balance;
-    // }
-
     function getCurrentBuyPrice(bytes32 tapeId, uint256 tokensToMint)
         external
         view
@@ -726,31 +685,6 @@ contract Tape is ERC1155, Ownable {
     {
         if (tapeBonds[tapeId].bond.steps.length == 0) revert Tape__NotFound();
         TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId];
-
-        // TapeBondUtils.TapeBond memory bond = tapeBonds[tapeId].steps.length != 0 ?
-        //     tapeBonds[tapeId] :
-        //     TapeBondUtils.TapeBond({
-        //         feeModel:feeModelAddress,
-        //         tapeModel:tapeModelAddress,
-        //         currencyToken:currencyTokenAddress,
-        //         steps:bondingCurveSteps,
-        //         currencyBalance:0,
-        //         currentSupply:0,
-        //         currentPrice:0,
-        //         consumePrice:0,
-        //         unclaimed:TapeBondUtils.UnclaimedFees(0,0,0,0,0),
-        //         // unclaimedMintFees:0,
-        //         // unclaimedBurnFees:0,
-        //         // unclaimedRoyaltiesFees:0,
-        //         // undistributedRoyaltiesFees:0,
-        //         // totalMinted:0,
-        //         // totalBurned:0,
-        //         count:TapeBondUtils.BondCount(0,0,0),
-        //         // addresses: [address(0),address(0)],
-        //         cartridgeOwner:address(0),
-        //         tapeCreator:address(0),
-        //         tapeOutputData:""
-        //     });
 
         (uint256 currencyAmount, uint256 finalPrice) =
             TapeBondUtils(tapeBondUtilsAddress).getCurrencyAmountToMintTokens(tokensToMint, bond.bond);
@@ -803,10 +737,6 @@ contract Tape is ERC1155, Ownable {
     function exists(bytes32 tapeId) external view returns (bool) {
         return tapeBonds[tapeId].bond.steps.length != 0;
     }
-
-    // function getSteps(bytes32 tapeId) external view returns (BondingCurveStep[] memory) {
-    //     return tapeBonds[tapeId].steps;
-    // }
 
     function maxTapeSupply(bytes32 tapeId) external view returns (uint256) {
         return tapeBonds[tapeId].bond.steps[tapeBonds[tapeId].bond.steps.length - 1].rangeMax;
