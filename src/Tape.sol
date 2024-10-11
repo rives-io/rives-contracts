@@ -3,8 +3,6 @@ pragma solidity >=0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-// import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-// import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@cartesi/rollups/contracts/dapp/ICartesiDApp.sol";
 import "@cartesi/rollups/contracts/library/LibOutputValidation.sol";
@@ -57,7 +55,6 @@ contract Tape is ERC1155, Ownable {
 
     // dapps
     mapping(address => bool) public dappAddresses; // user -> token -> amount
-    // address[] public dappAddresses;
 
     // Constructor
     constructor(address ownerAddress, address newTapeBondUtilsAddress, uint256 maxSteps)
@@ -69,12 +66,6 @@ contract Tape is ERC1155, Ownable {
         tapeBondUtilsAddress = newTapeBondUtilsAddress;
     }
 
-    // create bond
-    // modifier _checkAndCreateTapeBond(bytes32 id) {
-    //     _createTapeBond(id);
-    //     _;
-    // }
-
     modifier _checkTapeBond(bytes32 id) {
         if (tapeBonds[id].bond.steps.length == 0) revert Tape__NotFound();
         _;
@@ -84,22 +75,6 @@ contract Tape is ERC1155, Ownable {
         if (!IOwnershipModel(tapeOwnershipModelAddress).checkOwner(_msgSender(), id)) revert Tape__InvalidOwner();
         _;
     }
-
-    // function _createTapeBond(bytes32 id) internal {
-    //     if(tapeBonds[id].steps.length == 0) {
-    //         TapeBondUtils.TapeBond storage newTapeBond = tapeBonds[id];
-    //         newTapeBond.feeModel = feeModelAddress;
-    //         newTapeBond.currencyToken = currencyTokenAddress;
-    //         newTapeBond.tapeModel = tapeModelAddress;
-    //         for (uint256 i = 0; i < bondingCurveSteps.length; ++i) {
-    //             newTapeBond.steps.push(IBondingCurveModel.BondingCurveStep({
-    //                 rangeMax: bondingCurveSteps[i].rangeMax,
-    //                 coefficient: bondingCurveSteps[i].coefficient
-    //             }));
-    //         }
-    //         tapeBondsCreated.push(id);
-    //     }
-    // }
 
     function _createTapeBond(
         bytes32 id,
