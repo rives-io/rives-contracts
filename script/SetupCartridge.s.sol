@@ -103,10 +103,7 @@ contract SetupCartridge is Script {
             Create2.computeAddress(SALT, keccak256(cartridgeModelCode), DEPLOY_FACTORY),
             ownershipModelAddress,
             Create2.computeAddress(SALT, keccak256(bcModelCode), DEPLOY_FACTORY),
-            type(uint256).max, // max supply
-            50, // fee config - feeProportionPerK
-            ranges,
-            coefficients
+            type(uint256).max // max supply
         );
 
         vm.stopBroadcast();

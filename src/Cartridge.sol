@@ -37,7 +37,6 @@ contract Cartridge is ERC1155, Ownable {
     string private _baseURI = "";
 
     // Default parameters
-    IBondingCurveModel.BondingCurveStep[] public bondingCurveSteps;
     address public currencyTokenAddress;
     address public feeModelAddress;
     address public cartridgeModelAddress;
@@ -45,7 +44,6 @@ contract Cartridge is ERC1155, Ownable {
     address public cartridgeOwnershipModelAddress;
     address public cartridgeBondingCurveModelAddress;
     uint256 public maxSupply;
-    uint256 public feeConfig;
     address protocolWallet;
 
     // Cartridges
@@ -119,10 +117,7 @@ contract Cartridge is ERC1155, Ownable {
         address newCartridgeModel,
         address newCartridgeOwnershipModelAddress,
         address newCartridgeBondingCurveModelAddress,
-        uint256 newMaxSupply,
-        uint256 newFeeConfig,
-        uint256[] memory stepRangesMax,
-        uint256[] memory stepCoefficients
+        uint256 newMaxSupply
     ) external onlyOwner {
         _updateBondingCurveParams(
             newCurrencyToken,
@@ -130,10 +125,7 @@ contract Cartridge is ERC1155, Ownable {
             newCartridgeModel,
             newCartridgeOwnershipModelAddress,
             newCartridgeBondingCurveModelAddress,
-            newMaxSupply,
-            newFeeConfig,
-            stepRangesMax,
-            stepCoefficients
+            newMaxSupply
         );
     }
 
@@ -143,32 +135,13 @@ contract Cartridge is ERC1155, Ownable {
         address newCartridgeModel,
         address newCartridgeOwnershipModelAddress,
         address newCartridgeBondingCurveModelAddress,
-        uint256 newMaxSupply,
-        uint256 newFeeConfig,
-        uint256[] memory stepRangesMax,
-        uint256[] memory stepCoefficients
+        uint256 newMaxSupply
     ) internal {
+        // XXX TODO check interfaces instead of :
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCurrencyToken(newCurrencyToken);
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyFeeModel(newFeeModel);
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCartridgeModel(newCartridgeModel);
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyOwnershipModel(newCartridgeOwnershipModelAddress);
-
-        // XXX model checking itself, gives no guarantees
-        IBondingCurveModel(newCartridgeBondingCurveModelAddress).validateBondParams(
-            MAX_STEPS, stepRangesMax, stepCoefficients
-        );
-
-        delete bondingCurveSteps;
-
-        // XXX model checking itself, gives no guarantees
-        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newCartridgeBondingCurveModelAddress)
-            .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
-
-        for (uint256 i = 0; i < steps.length; ++i) {
-            bondingCurveSteps.push(
-                IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
-            );
-        }
 
         currencyTokenAddress = newCurrencyToken;
         feeModelAddress = newFeeModel;
@@ -176,7 +149,6 @@ contract Cartridge is ERC1155, Ownable {
         cartridgeOwnershipModelAddress = newCartridgeOwnershipModelAddress;
         cartridgeBondingCurveModelAddress = newCartridgeBondingCurveModelAddress;
         maxSupply = newMaxSupply;
-        feeConfig = newFeeConfig;
     }
 
     function updateProtocolWallet(address newProtocolWallet) external {
@@ -368,8 +340,9 @@ contract Cartridge is ERC1155, Ownable {
             cartridgeId, protocolWallet, bond.bond.currencyToken, BondUtils.RewardType.ProtocolFee, protocolFee
         );
 
-        // Transfer currency from the user
+        // Transfer currency from contract to user
         if (bond.bond.currencyToken != address(0)) {
+            // XXX same issue as withdraw
             if (!ERC20(bond.bond.currencyToken).approve(address(this), totalRefund)) revert Cartridge__ChangeError();
             if (!ERC20(bond.bond.currencyToken).transferFrom(address(this), user, totalRefund)) {
                 revert Cartridge__ChangeError();
@@ -459,15 +432,7 @@ contract Cartridge is ERC1155, Ownable {
 
     function validateCartridge(address dapp, bytes32 cartridgeId, bytes calldata _payload, Proof calldata _v)
         external
-        returns (bytes32)
-    {
-        setCartridgeParams(cartridgeId);
-
-        return _validateCartridge(dapp, cartridgeId, _payload, _v);
-    }
-
-    function _validateCartridge(address dapp, bytes32 cartridgeId, bytes calldata _payload, Proof calldata _v)
-        internal
+        _checkCartridgeBond(cartridgeId)
         returns (bytes32)
     {
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
