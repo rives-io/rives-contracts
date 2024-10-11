@@ -457,28 +457,6 @@ contract Cartridge is ERC1155, Ownable {
         _createCartridgeBond(cartridgeId, bondFeeConfig, steps, creatorAllocation, creator);
     }
 
-    function setCartridgeParams(bytes32 cartridgeId) public _checkCartridgeOwner(cartridgeId) {
-        _createCartridgeBond(cartridgeId, feeConfig, bondingCurveSteps, false, address(0));
-    }
-
-    function validateCartridgeCustom(
-        address dapp,
-        bytes32 cartridgeId,
-        bytes calldata _payload,
-        Proof calldata _v,
-        uint256 bondFeeConfig,
-        uint256[] memory stepRangesMax,
-        uint256[] memory stepCoefficients,
-        bool creatorAllocation,
-        address creator
-    ) external returns (bytes32) {
-        setCartridgeParamsCustom(
-            cartridgeId, bondFeeConfig, stepRangesMax, stepCoefficients, creatorAllocation, creator
-        );
-
-        return _validateCartridge(dapp, cartridgeId, _payload, _v);
-    }
-
     function validateCartridge(address dapp, bytes32 cartridgeId, bytes calldata _payload, Proof calldata _v)
         external
         returns (bytes32)
