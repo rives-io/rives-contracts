@@ -280,6 +280,13 @@ contract Cartridge is ERC1155, Ownable {
         bond.bond.count.minted += cartridgesToMint;
         bond.bond.currentPrice = finalPrice;
 
+        // XXX Check if we can do this here
+        // transfer fees
+        (cartridgeOwnerFee) = _distributeFees(cartridgeId, cartridgeOwnerFee);
+
+        bond.bond.unclaimed.mint += cartridgeOwnerFee;
+        accounts[protocolWallet][bond.bond.currencyToken] += protocolFee;
+
         // Transfer currency from the user
         if (bond.bond.currencyToken != address(0)) {
             if (!ERC20(bond.bond.currencyToken).transferFrom(user, address(this), totalPrice)) {
@@ -296,11 +303,6 @@ contract Cartridge is ERC1155, Ownable {
             }
         }
 
-        // transfer fees
-        (cartridgeOwnerFee) = _distributeFees(cartridgeId, cartridgeOwnerFee);
-
-        bond.bond.unclaimed.mint += cartridgeOwnerFee;
-        accounts[protocolWallet][bond.bond.currencyToken] += protocolFee;
         emit BondUtils.Reward(
             cartridgeId, protocolWallet, bond.bond.currencyToken, BondUtils.RewardType.ProtocolFee, protocolFee
         );

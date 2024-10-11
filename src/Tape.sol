@@ -379,6 +379,15 @@ contract Tape is ERC1155, Ownable {
         bond.bond.count.minted += tapesToMint;
         bond.bond.currentPrice = finalPrice;
 
+        // XXX Check if we can do this here
+        // transfer fees
+        (cartridgeOwnerFee, tapeCreatorFee, royaltiesFee) =
+            _distributeFees(tapeId, cartridgeOwnerFee, tapeCreatorFee, royaltiesFee);
+
+        bond.bond.unclaimed.mint += tapeCreatorFee + cartridgeOwnerFee;
+        bond.bond.unclaimed.undistributedRoyalties += royaltiesFee;
+        accounts[protocolWallet][bond.bond.currencyToken] += protocolFee;
+
         // Transfer currency from the user
         if (bond.bond.currencyToken != address(0)) {
             if (!ERC20(bond.bond.currencyToken).transferFrom(user, address(this), totalPrice)) {
@@ -395,13 +404,6 @@ contract Tape is ERC1155, Ownable {
             }
         }
 
-        // transfer fees
-        (cartridgeOwnerFee, tapeCreatorFee, royaltiesFee) =
-            _distributeFees(tapeId, cartridgeOwnerFee, tapeCreatorFee, royaltiesFee);
-
-        bond.bond.unclaimed.mint += tapeCreatorFee + cartridgeOwnerFee;
-        bond.bond.unclaimed.undistributedRoyalties += royaltiesFee;
-        accounts[protocolWallet][bond.bond.currencyToken] += protocolFee;
         emit BondUtils.Reward(
             tapeId, protocolWallet, bond.bond.currencyToken, BondUtils.RewardType.ProtocolFee, protocolFee
         );
