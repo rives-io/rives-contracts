@@ -16,10 +16,8 @@ contract TapeBondUtils is BondUtils {
         BondUtils.BondData bond;
         address feeModel; // immutable
         address tapeModel; // immutable
-        // address[2] addresses; // cartridgeOwner TapeCreator; // reduce number of var
         address cartridgeOwner;
         address tapeCreator;
-        // bytes32[] royaltiesTapes;
         bytes tapeOutputData;
     }
 
