@@ -373,6 +373,12 @@ contract Tape is ERC1155, Ownable {
 
         if (totalPrice > maxCurrencyPrice) revert Tape__SlippageLimitExceeded();
 
+        // XXX update balances before transfering (prevent reentrancy)
+        bond.bond.currencyBalance += currencyAmount;
+        bond.bond.currentSupply += tapesToMint;
+        bond.bond.count.minted += tapesToMint;
+        bond.bond.currentPrice = finalPrice;
+
         // Transfer currency from the user
         if (bond.bond.currencyToken != address(0)) {
             if (!ERC20(bond.bond.currencyToken).transferFrom(user, address(this), totalPrice)) {
@@ -388,12 +394,6 @@ contract Tape is ERC1155, Ownable {
                 }
             }
         }
-
-        // update balances
-        bond.bond.currencyBalance += currencyAmount;
-        bond.bond.currentSupply += tapesToMint;
-        bond.bond.count.minted += tapesToMint;
-        bond.bond.currentPrice = finalPrice;
 
         // transfer fees
         (cartridgeOwnerFee, tapeCreatorFee, royaltiesFee) =

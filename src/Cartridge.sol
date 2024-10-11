@@ -274,6 +274,12 @@ contract Cartridge is ERC1155, Ownable {
             revert Cartridge__SlippageLimitExceeded();
         }
 
+        // XXX update balances before external calls (prevent reentrancy)
+        bond.bond.currencyBalance += currencyAmount;
+        bond.bond.currentSupply += cartridgesToMint;
+        bond.bond.count.minted += cartridgesToMint;
+        bond.bond.currentPrice = finalPrice;
+
         // Transfer currency from the user
         if (bond.bond.currencyToken != address(0)) {
             if (!ERC20(bond.bond.currencyToken).transferFrom(user, address(this), totalPrice)) {
@@ -289,12 +295,6 @@ contract Cartridge is ERC1155, Ownable {
                 }
             }
         }
-
-        // update balances
-        bond.bond.currencyBalance += currencyAmount;
-        bond.bond.currentSupply += cartridgesToMint;
-        bond.bond.count.minted += cartridgesToMint;
-        bond.bond.currentPrice = finalPrice;
 
         // transfer fees
         (cartridgeOwnerFee) = _distributeFees(cartridgeId, cartridgeOwnerFee);
