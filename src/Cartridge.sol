@@ -161,19 +161,14 @@ contract Cartridge is ERC1155, Ownable {
         delete bondingCurveSteps;
 
         // XXX model checking itself, gives no guarantees
-        //IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newCartridgeBondingCurveModelAddress)
-        //    .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
-        //
-        //for (uint256 i = 0; i < steps.length; ++i) {
-        //    bondingCurveSteps.push(
-        //        IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
-        //    );
-        //}
+        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newCartridgeBondingCurveModelAddress)
+            .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
 
-        // XXX check with lyno if this is OK
-        bondingCurveSteps = IBondingCurveModel(newCartridgeBondingCurveModelAddress).validateBondingCurve(
-            bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply
-        );
+        for (uint256 i = 0; i < steps.length; ++i) {
+            bondingCurveSteps.push(
+                IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
+            );
+        }
 
         currencyTokenAddress = newCurrencyToken;
         feeModelAddress = newFeeModel;
