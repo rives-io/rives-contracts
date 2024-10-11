@@ -9,7 +9,7 @@ WORLD_ADDRESS ?= 0x00124590193fcd497c0eed517103368113f89258
 
 SALT ?= 0x0000000000000000000000000000000000000000000000000000000000000000
 
-slither :; slither ./src
+slither :; slither . --filter-paths "lib|node_modules"
 
 all: build build-proxy install-proxy-client
 

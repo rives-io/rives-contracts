@@ -1,4 +1,12 @@
 [profile.default]
 src = "src"
-out = "artifacts"
+out = "out"
 libs = ["node_modules"]
+via_ir = true
+
+remappings = [
+    "@interfaces/=src/interfaces/",
+    "@models/=src/models/",
+    "@openzeppelin/=node_modules/@openzeppelin/",
+    "@cartesi/=node_modules/@cartesi/"
+]
