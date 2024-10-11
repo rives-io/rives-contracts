@@ -12,7 +12,7 @@ SALT ?= 0x0000000000000000000000000000000000000000000000000000000000000000
 all: build build-proxy install-proxy-client
 
 build:
-	forge build
+	forge build --via-ir --optimize
 
 build-proxy: install-proxy
 	cd proxy-contracts/ && pnpm mud tablegen
