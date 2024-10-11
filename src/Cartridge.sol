@@ -191,7 +191,6 @@ contract Cartridge is ERC1155, Ownable {
 
     function setDapp(address dapp, bool active) external onlyOwner {
         if (dappAddresses[dapp]) revert Cartridge__InvalidDapp();
-
         dappAddresses[dapp] = active;
     }
 
@@ -602,24 +601,26 @@ contract Cartridge is ERC1155, Ownable {
 
     // withdraw
 
+    // XXX have Lyno check update
     function withdrawBalance(address token, uint256 amount) external {
         address payable user = payable(_msgSender());
         if (accounts[user][token] < amount) {
             revert BondUtils.Bond__InvalidAmount();
         }
+
+        // update balance before external calls
         accounts[user][token] -= amount;
 
         if (token != address(0)) {
-            if (!ERC20(token).approve(address(this), amount)) {
-                revert Cartridge__ChangeError();
-            }
-            if (!ERC20(token).transferFrom(address(this), user, amount)) {
+            if (!ERC20(token).transfer(user, amount)) {
                 revert Cartridge__ChangeError();
             }
         } else {
             (bool sent,) = user.call{value: amount}("");
             if (!sent) revert Cartridge__ChangeError();
         }
+
+        // XXX probably add an event here
     }
 
     function getCurrentBuyPrice(bytes32 cartridgeId, uint256 tokensToMint)
