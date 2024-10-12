@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@interfaces/ITapeFeeModel.sol";
 
-contract TapeFixedFee is ITapeFeeModel {
+contract TapeFixedFeeModel is ITapeFeeModel {
     uint256 constant cartridgeOwnerFee = 1000;
     uint256 constant tapeCreatorFee = 1000;
     uint256 constant protocolFee = 500;

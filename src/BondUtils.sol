@@ -7,19 +7,10 @@ import "@interfaces/IBondingCurveModel.sol";
 
 contract BondUtils {
     error Bond__InvalidCurrencyToken(string reason);
-    // error Bond__InsufficientFunds();
-    // error Bond__ChangeError();
-    // error Bond__InvalidFeeModel(string reason);
     error Bond__InvalidOwnershipModel(string reason);
-    // error Bond__NotFound();
-    // error Bond__InvalidUser();
     error Bond__InvalidCurrentSupply();
     error Bond__InvalidAmount();
-    // error Bond__InvalidDapp();
     error Bond__ExceedSupply();
-    // error Bond__InvalidReceiver();
-    // error Bond__SlippageLimitExceeded();
-    // error Bond__InvalidOwner();
 
     event Buy(bytes32 indexed id, address indexed user, uint256 amountMinted, uint256 pricePayed);
     event Sell(bytes32 indexed id, address indexed user, uint256 amountBurned, uint256 refundReceived);
@@ -56,7 +47,6 @@ contract BondUtils {
 
     struct BondData {
         address currencyToken; // immutable
-        // mapping (uint8 => BondingCurveStep) steps; // immutable
         IBondingCurveModel.BondingCurveStep[] steps; // immutable
         uint256 currencyBalance;
         uint256 currentSupply;
@@ -73,7 +63,6 @@ contract BondUtils {
 
     // Aux/validation methods
     function verifyCurrencyToken(address newCurrencyToken) public view {
-        // if (newCurrencyToken == address(0)) revert Bond__InvalidCurrencyToken('address');
         // Accept base layer token as address 0
         if (newCurrencyToken == address(0)) return;
 
@@ -121,7 +110,7 @@ contract BondUtils {
         revert Bond__InvalidCurrentSupply(); // can never happen
     }
 
-    function getCurrencyAmoutToMintTokens(uint256 tokensToMint, BondData memory bond)
+    function getCurrencyAmountToMintTokens(uint256 tokensToMint, BondData memory bond)
         public
         pure
         returns (uint256 currencyAmount, uint256 finalPrice)
@@ -133,7 +122,7 @@ contract BondUtils {
         uint256 currentSupply = bond.currentSupply + bond.count.consumed;
 
         if (
-            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff - tokensToMint < currentSupply
+            type(uint256).max - tokensToMint < currentSupply
                 || currentSupply + tokensToMint > bond.steps[bond.steps.length - 1].rangeMax
         ) revert Bond__ExceedSupply();
 
@@ -171,7 +160,7 @@ contract BondUtils {
         currencyAmount = currencyAmountToBond;
     }
 
-    function getCurrencyAmoutForBurningTokens(uint256 tokensToBurn, BondData memory bond)
+    function getCurrencyAmountForBurningTokens(uint256 tokensToBurn, BondData memory bond)
         public
         pure
         returns (uint256 currencyAmount, uint256 finalPrice)
@@ -217,7 +206,7 @@ contract BondUtils {
         currencyAmount = currencyAmountFromBond;
     }
 
-    function getCurrencyAmoutForConsumingTokens(uint256 tokensToConsume, BondData memory bond)
+    function getCurrencyAmountForConsumingTokens(uint256 tokensToConsume, BondData memory bond)
         public
         pure
         returns (uint256 currencyAmount, uint256 finalPrice)
@@ -229,7 +218,7 @@ contract BondUtils {
         uint256 currentConsumed = bond.count.consumed;
 
         if (
-            0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff - tokensToConsume < currentConsumed
+            type(uint256).max - tokensToConsume < currentConsumed
                 || tokensToConsume + currentConsumed > bond.currentSupply
         ) revert Bond__ExceedSupply();
 
@@ -272,8 +261,8 @@ contract BondUtils {
         bytes memory _base = "0123456789abcdef";
 
         for (uint256 i = 0; i < buffer.length; i++) {
-            converted[i * 2] = _base[uint8(buffer[i]) / _base.length];
-            converted[i * 2 + 1] = _base[uint8(buffer[i]) % _base.length];
+            converted[i * 2] = _base[uint8(buffer[i] >> 4)]; // Get the high nibble
+            converted[i * 2 + 1] = _base[uint8(buffer[i] & 0x0f)]; // Get the low nibble
         }
 
         return string(converted);

@@ -17,7 +17,6 @@ contract CartridgeBondUtils is BondUtils {
         address feeModel; // immutable
         uint256 feeConfig; // immutable
         address cartridgeModel; // immutable
-        // address[2] addresses; // cartridgeOwner CartridgeCreator; // reduce number of var
         address cartridgeOwner;
         uint256 lastUpdate;
         bytes eventData;
