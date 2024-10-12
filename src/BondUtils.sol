@@ -103,7 +103,6 @@ contract BondUtils {
 
     function getCurrentStep(uint256 currentSupply, BondData memory bond) public pure returns (uint256) {
         for (uint256 i = 0; i < bond.steps.length; ++i) {
-            // XXX why <= and not < since we continue
             if (currentSupply <= bond.steps[i].rangeMax) {
                 return i;
             }
@@ -111,7 +110,7 @@ contract BondUtils {
         revert Bond__InvalidCurrentSupply(); // can never happen
     }
 
-    function getCurrencyAmountToMintTokens(uint256 tokensToMint, BondData memory bond)
+    function getCurrencyAmoutToMintTokens(uint256 tokensToMint, BondData memory bond)
         public
         pure
         returns (uint256 currencyAmount, uint256 finalPrice)
@@ -119,6 +118,7 @@ contract BondUtils {
         if (tokensToMint == 0) revert Bond__InvalidAmount();
 
         IBondingCurveModel.BondingCurveStep[] memory steps = bond.steps;
+
         uint256 currentSupply = bond.currentSupply + bond.count.consumed;
 
         if (
@@ -130,13 +130,13 @@ contract BondUtils {
         uint256 currencyAmountToBond;
         uint256 supplyLeft;
         uint256 priceAfter = bond.currentPrice;
-        // XXX important change: needs to be checked by lyno
-        uint256 i = getCurrentStep(currentSupply, bond);
-        for (i; i < steps.length; ++i) {
+        for (uint256 i = getCurrentStep(currentSupply, bond); i < steps.length; ++i) {
             IBondingCurveModel.BondingCurveStep memory step = steps[i];
             supplyLeft = step.rangeMax - currentSupply;
 
-            if (supplyLeft < tokensLeft && supplyLeft > 0) {
+            if (supplyLeft < tokensLeft) {
+                if (supplyLeft == 0) continue;
+
                 // ensure reserve is calculated with ceiling
                 // cp*n + c*(n+1))*n/2
                 uint256 initialPrice = priceAfter + step.coefficient;
