@@ -32,9 +32,6 @@ contract Tape is ERC1155, Ownable {
     // Constants
     uint256 private immutable MAX_STEPS;
 
-    // base URI
-    string private _baseURI = "";
-
     // Default parameters
     IBondingCurveModel.BondingCurveStep[] public bondingCurveSteps;
     address public currencyTokenAddress;
@@ -706,11 +703,8 @@ contract Tape is ERC1155, Ownable {
         return ITapeModel(tapeBonds[tapeId].tapeModel).decodeTapeMetadata(tapeBonds[tapeId].tapeOutputData);
     }
 
-    function uri(uint256 tokenId) public view override returns (string memory) {
-        return uri(bytes32(tokenId));
-    }
-
-    function uri(bytes32 tokenId) public view returns (string memory) {
-        return string.concat(_baseURI, TapeBondUtils(tapeBondUtilsAddress).toHex(abi.encodePacked(tokenId)));
+    function tokenUri(uint256 tokenId) public view returns (string memory) {
+        return
+            string.concat(uri(tokenId), TapeBondUtils(tapeBondUtilsAddress).toHex(abi.encodePacked(bytes32(tokenId))));
     }
 }

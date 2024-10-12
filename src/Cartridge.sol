@@ -646,11 +646,9 @@ contract Cartridge is ERC1155, Ownable {
         );
     }
 
-    function uri(uint256 tokenId) public view override returns (string memory) {
-        return uri(bytes32(tokenId));
-    }
-
-    function uri(bytes32 tokenId) public view returns (string memory) {
-        return string.concat(_baseURI, CartridgeBondUtils(cartridgeBondUtilsAddress).toHex(abi.encodePacked(tokenId)));
+    function tokenUri(uint256 tokenId) public view returns (string memory) {
+        return string.concat(
+            uri(tokenId), CartridgeBondUtils(cartridgeBondUtilsAddress).toHex(abi.encodePacked(bytes32(tokenId)))
+        );
     }
 }

@@ -110,7 +110,7 @@ contract BondUtils {
         revert Bond__InvalidCurrentSupply(); // can never happen
     }
 
-    function getCurrencyAmoutToMintTokens(uint256 tokensToMint, BondData memory bond)
+    function getCurrencyAmountToMintTokens(uint256 tokensToMint, BondData memory bond)
         public
         pure
         returns (uint256 currencyAmount, uint256 finalPrice)
