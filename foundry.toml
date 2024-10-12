@@ -5,7 +5,6 @@ libs = ["node_modules", "lib"]
 via_ir = true
 optimizer = true
 optimizer_runs = 20000
-gas_reports = ["*"]
 
 remappings = [
     "@std=lib/forge-std/src/",
