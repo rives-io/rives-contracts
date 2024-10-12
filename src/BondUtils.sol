@@ -11,7 +11,6 @@ contract BondUtils {
     error Bond__InvalidCurrentSupply();
     error Bond__InvalidAmount();
     error Bond__ExceedSupply();
-    error Bond__InvalidBondingCurve(string reason);
 
     event Buy(bytes32 indexed id, address indexed user, uint256 amountMinted, uint256 pricePayed);
     event Sell(bytes32 indexed id, address indexed user, uint256 amountBurned, uint256 refundReceived);
