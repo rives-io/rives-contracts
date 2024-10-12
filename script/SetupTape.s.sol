@@ -116,9 +116,7 @@ contract SetupTape is Script {
             Create2.computeAddress(SALT, keccak256(tapeModelCode), DEPLOY_FACTORY),
             ownershipModelAddress,
             Create2.computeAddress(SALT, keccak256(bcModelCode), DEPLOY_FACTORY),
-            10000, // max supply
-            ranges,
-            coefficients
+            10000 // max supply
         );
 
         vm.stopBroadcast();

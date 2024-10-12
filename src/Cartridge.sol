@@ -343,8 +343,7 @@ contract Cartridge is ERC1155, Ownable {
         // Transfer currency from contract to user
         if (bond.bond.currencyToken != address(0)) {
             // XXX same issue as withdraw
-            if (!ERC20(bond.bond.currencyToken).approve(address(this), totalRefund)) revert Cartridge__ChangeError();
-            if (!ERC20(bond.bond.currencyToken).transferFrom(address(this), user, totalRefund)) {
+            if (!ERC20(bond.bond.currencyToken).transfer(user, totalRefund)) {
                 revert Cartridge__ChangeError();
             }
         } else {
@@ -416,7 +415,7 @@ contract Cartridge is ERC1155, Ownable {
         return currencyAmount;
     }
 
-    function setCartridgeParamsCustom(
+    function setCartridgeParams(
         bytes32 cartridgeId,
         uint256 bondFeeConfig,
         uint256[] memory stepRangesMax,

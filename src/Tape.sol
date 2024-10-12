@@ -111,9 +111,7 @@ contract Tape is ERC1155, Ownable {
         address newTapeModel,
         address newTapeOwnershipModelAddress,
         address newTapeBondingCurveModelAddress,
-        uint256 newMaxSupply,
-        uint256[] memory stepRangesMax,
-        uint256[] memory stepCoefficients
+        uint256 newMaxSupply
     ) internal {
         TapeBondUtils(tapeBondUtilsAddress).verifyCurrencyToken(newCurrencyToken);
         TapeBondUtils(tapeBondUtilsAddress).verifyFeeModel(newFeeModel);
@@ -121,20 +119,9 @@ contract Tape is ERC1155, Ownable {
         TapeBondUtils(tapeBondUtilsAddress).verifyOwnershipModel(newTapeOwnershipModelAddress);
 
         // XXX model validating itself
-        IBondingCurveModel(newTapeBondingCurveModelAddress).validateBondParams(
-            MAX_STEPS, stepRangesMax, stepCoefficients
-        );
-
-        delete bondingCurveSteps;
-
-        // XXX redundant loop I think
-        IBondingCurveModel.BondingCurveStep[] memory steps = IBondingCurveModel(newTapeBondingCurveModelAddress)
-            .validateBondingCurve(bytes32(0), stepRangesMax, stepCoefficients, newMaxSupply);
-        for (uint256 i = 0; i < steps.length; ++i) {
-            bondingCurveSteps.push(
-                IBondingCurveModel.BondingCurveStep({rangeMax: steps[i].rangeMax, coefficient: steps[i].coefficient})
-            );
-        }
+        //IBondingCurveModel(newTapeBondingCurveModelAddress).validateBondParams(
+        //    MAX_STEPS, stepRangesMax, stepCoefficients
+        //);
 
         currencyTokenAddress = newCurrencyToken;
         feeModelAddress = newFeeModel;
@@ -161,9 +148,7 @@ contract Tape is ERC1155, Ownable {
         address newTapeModel,
         address newTapeOwnershipModelAddress,
         address newTapeBondingCurveModelAddress,
-        uint256 newMaxSupply,
-        uint256[] memory stepRangesMax,
-        uint256[] memory stepCoefficients
+        uint256 newMaxSupply
     ) external onlyOwner {
         _updateBondingCurveParams(
             newCurrencyToken,
@@ -171,9 +156,7 @@ contract Tape is ERC1155, Ownable {
             newTapeModel,
             newTapeOwnershipModelAddress,
             newTapeBondingCurveModelAddress,
-            newMaxSupply,
-            stepRangesMax,
-            stepCoefficients
+            newMaxSupply
         );
     }
 
@@ -467,10 +450,9 @@ contract Tape is ERC1155, Ownable {
             tapeId, protocolWallet, bond.bond.currencyToken, BondUtils.RewardType.ProtocolFee, protocolFee
         );
 
-        // Transfer currency from the user
+        // Transfer currency to the user
         if (bond.bond.currencyToken != address(0)) {
-            if (!ERC20(bond.bond.currencyToken).approve(address(this), totalRefund)) revert Tape__ChangeError();
-            if (!ERC20(bond.bond.currencyToken).transferFrom(address(this), user, totalRefund)) {
+            if (!ERC20(bond.bond.currencyToken).transfer(user, totalRefund)) {
                 revert Tape__ChangeError();
             }
         } else {
@@ -531,7 +513,7 @@ contract Tape is ERC1155, Ownable {
         return currencyAmount;
     }
 
-    function setTapeParamsCustom(
+    function setTapeParams(
         bytes32 tapeId,
         uint256[] memory stepRangesMax,
         uint256[] memory stepCoefficients,
@@ -544,36 +526,8 @@ contract Tape is ERC1155, Ownable {
         _createTapeBond(tapeId, steps, creatorAllocation, creator);
     }
 
-    function setTapeParams(bytes32 tapeId) public _checkTapeOwner(tapeId) {
-        _createTapeBond(tapeId, bondingCurveSteps, false, address(0));
-    }
-
-    function validateTapeCustom(
-        address dapp,
-        bytes32 tapeId,
-        bytes calldata _payload,
-        Proof calldata _v,
-        uint256[] memory stepRangesMax,
-        uint256[] memory stepCoefficients,
-        bool creatorAllocation,
-        address creator
-    ) external returns (bytes32) {
-        setTapeParamsCustom(tapeId, stepRangesMax, stepCoefficients, creatorAllocation, creator);
-
-        return _validateTape(dapp, tapeId, _payload, _v);
-    }
-
     function validateTape(address dapp, bytes32 tapeId, bytes calldata _payload, Proof calldata _v)
         external
-        returns (bytes32)
-    {
-        setTapeParams(tapeId);
-
-        return _validateTape(dapp, tapeId, _payload, _v);
-    }
-
-    function _validateTape(address dapp, bytes32 tapeId, bytes calldata _payload, Proof calldata _v)
-        internal
         returns (bytes32)
     {
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
@@ -666,10 +620,7 @@ contract Tape is ERC1155, Ownable {
         accounts[user][token] -= amount;
 
         if (token != address(0)) {
-            if (!ERC20(token).approve(address(this), amount)) {
-                revert Tape__ChangeError();
-            }
-            if (!ERC20(token).transferFrom(address(this), user, amount)) {
+            if (!ERC20(token).transfer(user, amount)) {
                 revert Tape__ChangeError();
             }
         } else {
