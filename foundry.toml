@@ -11,5 +11,7 @@ remappings = [
     "@interfaces/=src/interfaces/",
     "@models/=src/models/",
     "@openzeppelin/=node_modules/@openzeppelin/",
-    "@cartesi/=node_modules/@cartesi/"
+    "@cartesi/=node_modules/@cartesi/",
+    "@mocks=test/mocks/",
+    "@src=src/"
 ]

@@ -11,6 +11,7 @@ contract BondUtils {
     error Bond__InvalidCurrentSupply();
     error Bond__InvalidAmount();
     error Bond__ExceedSupply();
+    error Bond__InvalidBondingCurve(string reason);
 
     event Buy(bytes32 indexed id, address indexed user, uint256 amountMinted, uint256 pricePayed);
     event Sell(bytes32 indexed id, address indexed user, uint256 amountBurned, uint256 refundReceived);
@@ -60,6 +61,7 @@ contract BondUtils {
     uint256 private constant MIN_BOOL_LENGTH = 31; // uint8 = 32 bytes
     uint256 private constant MIN_UINT8_LENGTH = 31; // uint8 = 32 bytes
     uint256 private constant MIN_STRING_LENGTH = 95; // empty string = 64 bytes, 1 character = 96 bytes
+    uint256 private constant MIN_ARRAY_LENGTH = 63; // empty array = 64 bytes = 64 bytes
 
     // Aux/validation methods
     function verifyCurrencyToken(address newCurrencyToken) public view {
@@ -136,7 +138,6 @@ contract BondUtils {
 
             if (supplyLeft < tokensLeft) {
                 if (supplyLeft == 0) continue;
-
                 // ensure reserve is calculated with ceiling
                 // cp*n + c*(n+1))*n/2
                 uint256 initialPrice = priceAfter + step.coefficient;

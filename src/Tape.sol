@@ -115,11 +115,6 @@ contract Tape is ERC1155, Ownable {
         TapeBondUtils(tapeBondUtilsAddress).verifyTapeModel(newTapeModel);
         TapeBondUtils(tapeBondUtilsAddress).verifyOwnershipModel(newTapeOwnershipModelAddress);
 
-        // XXX model validating itself
-        //IBondingCurveModel(newTapeBondingCurveModelAddress).validateBondParams(
-        //    MAX_STEPS, stepRangesMax, stepCoefficients
-        //);
-
         currencyTokenAddress = newCurrencyToken;
         feeModelAddress = newFeeModel;
         tapeModelAddress = newTapeModel;

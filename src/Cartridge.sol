@@ -142,6 +142,7 @@ contract Cartridge is ERC1155, Ownable {
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyFeeModel(newFeeModel);
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyCartridgeModel(newCartridgeModel);
         CartridgeBondUtils(cartridgeBondUtilsAddress).verifyOwnershipModel(newCartridgeOwnershipModelAddress);
+        // TODO check newCartridgeBondingCurveModelAddress
 
         currencyTokenAddress = newCurrencyToken;
         feeModelAddress = newFeeModel;
