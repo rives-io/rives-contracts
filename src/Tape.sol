@@ -353,13 +353,11 @@ contract Tape is ERC1155, Ownable {
 
         if (totalPrice > maxCurrencyPrice) revert Tape__SlippageLimitExceeded();
 
-        // XXX update balances before transfering (prevent reentrancy)
         bond.bond.currencyBalance += currencyAmount;
         bond.bond.currentSupply += tapesToMint;
         bond.bond.count.minted += tapesToMint;
         bond.bond.currentPrice = finalPrice;
 
-        // XXX Check if we can do this here
         // transfer fees
         (cartridgeOwnerFee, tapeCreatorFee, royaltiesFee) =
             _distributeFees(tapeId, cartridgeOwnerFee, tapeCreatorFee, royaltiesFee);
@@ -404,7 +402,6 @@ contract Tape is ERC1155, Ownable {
         _checkTapeBond(tapeId)
         returns (uint256)
     {
-        // if (receiver == address(0)) revert Tape__InvalidReceiver();
         address payable user = payable(_msgSender());
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
@@ -466,7 +463,6 @@ contract Tape is ERC1155, Ownable {
     }
 
     function consumeTapes(bytes32 tapeId, uint256 tapesToConsume) external _checkTapeBond(tapeId) returns (uint256) {
-        // if (receiver == address(0)) revert Tape__InvalidReceiver();
         address user = _msgSender();
 
         TapeBondUtils.TapeBond storage bond = tapeBonds[tapeId];
@@ -477,7 +473,6 @@ contract Tape is ERC1155, Ownable {
         // fees
         (uint256 protocolFee, uint256 cartridgeOwnerFee, uint256 tapeCreatorFee, uint256 royaltiesFee) =
             ITapeFeeModel(bond.feeModel).getConsumeFees(currencyAmount);
-        // if (protocolFee + cartridgeOwnerFee + tapeCreatorFee + royaltiesFee != currencyAmount) revert Tape__InsufficientFunds();
 
         // burn
         _burn(user, uint256(tapeId), tapesToConsume);

@@ -246,13 +246,11 @@ contract Cartridge is ERC1155, Ownable {
             revert Cartridge__SlippageLimitExceeded();
         }
 
-        // XXX update balances before external calls (prevent reentrancy)
         bond.bond.currencyBalance += currencyAmount;
         bond.bond.currentSupply += cartridgesToMint;
         bond.bond.count.minted += cartridgesToMint;
         bond.bond.currentPrice = finalPrice;
 
-        // XXX Check if we can do this here
         // transfer fees
         (cartridgeOwnerFee) = _distributeFees(cartridgeId, cartridgeOwnerFee);
 
@@ -299,7 +297,6 @@ contract Cartridge is ERC1155, Ownable {
         _checkCartridgeBond(cartridgeId)
         returns (uint256)
     {
-        // if (receiver == address(0)) revert Cartridge__InvalidReceiver();
         address payable user = payable(_msgSender());
 
         CartridgeBondUtils.CartridgeBond storage bond = cartridgeBonds[cartridgeId];
