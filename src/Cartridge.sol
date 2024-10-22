@@ -91,7 +91,7 @@ contract Cartridge is ERC1155, Ownable {
             CartridgeBondUtils.CartridgeBond storage newCartridgeBond = cartridgeBonds[id];
             newCartridgeBond.feeModel = feeModelAddress;
             newCartridgeBond.feeConfig = bondFeeConfig;
-            newCartridgeBond.bond.currencyToken = currencyTokenAddress;
+            newCartridgeBond.bond.currencyToken = token;
             newCartridgeBond.cartridgeModel = cartridgeModelAddress;
             for (uint256 i = 0; i < steps.length; ++i) {
                 newCartridgeBond.bond.steps.push(

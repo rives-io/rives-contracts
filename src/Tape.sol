@@ -80,9 +80,10 @@ contract Tape is ERC1155, Ownable {
         address creator
     ) internal {
         if (tapeBonds[id].bond.steps.length == 0) {
+
             TapeBondUtils.TapeBond storage newTapeBond = tapeBonds[id];
             newTapeBond.feeModel = feeModelAddress;
-            newTapeBond.bond.currencyToken = currencyTokenAddress;
+            newTapeBond.bond.currencyToken = token;
             newTapeBond.tapeModel = tapeModelAddress;
             for (uint256 i = 0; i < steps.length; ++i) {
                 newTapeBond.bond.steps.push(

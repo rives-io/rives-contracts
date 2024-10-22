@@ -57,7 +57,7 @@ setup-proxy: --load-env
 	 CARTRIDGE_ASSET_ADDRESS=${CARTRIDGE_ASSET_ADDRESS} TAPE_ASSET_ADDRESS=${TAPE_ASSET_ADDRESS} \
 	 forge script script/SetupResources.s.sol --rpc-url ${RPC_URL} --broadcast --sender ${OPERATOR_ADDRESS}
 
-update-proxy: world-update-proxy seup-proxy
+update-proxy: world-update-proxy setup-proxy
 
 world-update-proxy: --load-env
 	cd proxy-contracts/ && PRIVATE_KEY=${PRIVATE_KEY} pnpm mud deploy --salt ${SALT} --rpc ${RPC_URL} --world-address ${WORLD_ADDRESS}
